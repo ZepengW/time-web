@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+
+  <!-- iOS 主屏幕 Web App（接近真全屏） -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="上海时钟">
+  <meta name="theme-color" content="#0b1020">
+
+  <link rel="manifest" href="./manifest.webmanifest">
+
+  <title>上海时间 · Time.is</title>
+
+  <style>
+    :root{
+      --bg: #0b1020;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.70);
+      --line: rgba(255,255,255,.14);
+      --shadow: 0 24px 60px rgba(0,0,0,.35);
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg: #f7f8fb;
+        --card: rgba(0,0,0,.04);
+        --card2: rgba(0,0,0,.06);
+        --text: rgba(0,0,0,.88);
+        --muted: rgba(0,0,0,.62);
+        --line: rgba(0,0,0,.12);
+        --shadow: 0 20px 50px rgba(0,0,0,.10);
+      }
+    }
+
+    /* ✅ 关键：彻底禁止滚动条（桌面/全屏都不出现） */
+    html, body{
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body{
+      margin:0;
+      color:var(--text);
+
+      /* iPhone 刘海/状态栏安全区 */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+
+      background:
+        radial-gradient(1200px 700px at 15% 15%, rgba(99,102,241,.30), transparent 60%),
+        radial-gradient(900px 600px at 85% 25%, rgba(16,185,129,.22), transparent 55%),
+        radial-gradient(1000px 700px at 60% 90%, rgba(59,130,246,.22), transparent 60%),
+        var(--bg);
+
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC",
+        "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-sizing:border-box;
+    }
+
+    .wrap{
+      width:min(1100px, 100%);
+      padding: clamp(10px, 2vw, 24px);
+      box-sizing:border-box;
+    }
+
+    .card{
+      user-select:none;
+      cursor: pointer;
+      position:relative;
+      overflow:hidden;
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: clamp(18px, 2.6vw, 36px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    #time_is_link{
+      display:inline-block;
+      font-size: clamp(13px, 1.5vw, 18px) !important;
+      color: var(--muted);
+      text-decoration:none;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    #time_is_link:hover{ text-decoration: underline; color: var(--text); }
+
+    #Shanghai_z43d{
+      display:block;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .02em;
+      line-height: 1.22;
+      font-size: clamp(30px, 5.2vw, 92px) !important;
+    }
+    #Shanghai_z43d br{ line-height: 1.35; }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <section class="card" id="fsArea" title="点击切换全屏（桌面）">
+      <a href="https://time.is/Shanghai" id="time_is_link" rel="nofollow">
+        Powered by Time.is（上海时间）
+      </a>
+      <span id="Shanghai_z43d"></span>
+    </section>
+  </main>
+
+  <script src="//widget.time.is/zh.js"></script>
+  <script>
+    time_is_widget.init({
+      Shanghai_z43d:{
+        template:"TIME<br>DATE<br>SUN",
+        date_format:"year-monthnum-daynum dname",
+        sun_format:"日出: srhour:srminute 日落: sshour:ssminute<br>昼长: dlhours时 dlminutes分",
+        coords:"31.2222200,121.4580600"
+      }
+    });
+
+    (function () {
+      const area = document.getElementById('fsArea');
+      const link = document.getElementById('time_is_link');
+
+      // 链接只跳转，不触发全屏
+      link.addEventListener('click', (ev) => ev.stopPropagation());
+
+      // 其它区域点击：桌面浏览器全屏切换（iOS Safari 多数不支持，调用也没事）
+      async function toggleFullscreen() {
+        try {
+          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          }
+        } catch (e) {}
+      }
+      area.addEventListener('click', () => toggleFullscreen());
+
+      // iPhone Safari 中尽量触发地址栏收起：只在“Safari 内打开”时尝试
+      // 如果是“添加到主屏幕后（standalone）”，本来就没有地址栏，没必要动
+      window.addEventListener('load', () => {
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+        if (isIOS && !isStandalone) {
+          setTimeout(() => { try { window.scrollTo(0, 1); } catch(e) {} }, 80);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
