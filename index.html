@@ -68,7 +68,7 @@
     }
 
     .wrap{
-      width:min(1100px, 100%);
+      width:min(1200px, 100%);
       padding: clamp(10px, 2vw, 24px);
       display:flex;
       align-items:flex-start;
@@ -76,10 +76,12 @@
       box-sizing:border-box;
     }
 
-    .dashboard{
-      display:flex;
-      gap: clamp(16px, 3vw, 28px);
-      width: min(1000px, 100%);
+    .dashboard-row{
+      display:grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      gap: clamp(16px, 2.8vw, 32px);
+      width: min(1100px, 100%);
+      align-items: stretch;
     }
 
     .card{
@@ -139,13 +141,19 @@
       font-variant-numeric: tabular-nums;
       letter-spacing: .02em;
       line-height: 1.22;
-      font-size: clamp(30px, 5.2vw, 92px) !important;
+      font-size: clamp(26px, 4.6vw, 78px) !important;
     }
     #Shanghai_z43d br{ line-height: 1.35; }
 
-    @media (max-width: 860px){
-      .dashboard{
-        flex-direction:column;
+    @media (max-width: 980px){
+      .dashboard-row{
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (min-width: 1280px){
+      .dashboard-row{
+        width: min(1160px, 100%);
       }
     }
   </style>
@@ -153,15 +161,15 @@
 
 <body>
   <main class="wrap">
-    <section class="dashboard">
-      <section class="card" id="fsArea" title="点击切换全屏（桌面）">
+    <section class="dashboard-row">
+      <section class="card calendar-card" id="fsArea" title="点击切换全屏（桌面）">
         <h2>日历信息卡片</h2>
         <a href="https://time.is/Shanghai" id="time_is_link" rel="nofollow">
           Powered by Time.is（上海时间）
         </a>
         <span id="Shanghai_z43d"></span>
       </section>
-      <section class="card">
+      <section class="card agenda-card">
         <h2>日程信息卡片</h2>
         <p>聚合今日待办与提醒，保持对关键安排的掌控。</p>
         <ul class="info-list">
@@ -186,9 +194,8 @@
   <script>
     time_is_widget.init({
       Shanghai_z43d:{
-        template:"TIME<br>DATE<br>SUN",
+        template:"DATE",
         date_format:"year-monthnum-daynum dname",
-        sun_format:"日出: srhour:srminute 日落: sshour:ssminute<br>昼长: dlhours时 dlminutes分",
         coords:"31.2222200,121.4580600"
       }
     });
