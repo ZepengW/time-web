@@ -47,7 +47,7 @@
       color:var(--text);
 
       /* iPhone 刘海/状态栏安全区 */
-      padding-top: env(safe-area-inset-top);
+      padding-top: calc(env(safe-area-inset-top) + clamp(24px, 6vh, 84px));
       padding-bottom: env(safe-area-inset-bottom);
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
@@ -62,7 +62,7 @@
         "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
 
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:center;
       box-sizing:border-box;
     }
@@ -70,7 +70,16 @@
     .wrap{
       width:min(1100px, 100%);
       padding: clamp(10px, 2vw, 24px);
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
       box-sizing:border-box;
+    }
+
+    .dashboard{
+      display:flex;
+      gap: clamp(16px, 3vw, 28px);
+      width: min(1000px, 100%);
     }
 
     .card{
@@ -85,6 +94,34 @@
       padding: clamp(18px, 2.6vw, 36px);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
+    }
+
+    .card h2{
+      margin: 0 0 12px;
+      font-size: clamp(18px, 2.2vw, 26px);
+      letter-spacing: .02em;
+    }
+
+    .card p{
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: clamp(13px, 1.6vw, 16px);
+      line-height: 1.6;
+    }
+
+    .info-list{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      margin:0;
+      padding:0;
+      list-style:none;
+      font-size: clamp(14px, 1.7vw, 18px);
+    }
+    .info-list span{
+      color: var(--muted);
+      font-size: clamp(12px, 1.5vw, 15px);
+      letter-spacing: .02em;
     }
 
     #time_is_link{
@@ -105,16 +142,43 @@
       font-size: clamp(30px, 5.2vw, 92px) !important;
     }
     #Shanghai_z43d br{ line-height: 1.35; }
+
+    @media (max-width: 860px){
+      .dashboard{
+        flex-direction:column;
+      }
+    }
   </style>
 </head>
 
 <body>
   <main class="wrap">
-    <section class="card" id="fsArea" title="点击切换全屏（桌面）">
-      <a href="https://time.is/Shanghai" id="time_is_link" rel="nofollow">
-        Powered by Time.is（上海时间）
-      </a>
-      <span id="Shanghai_z43d"></span>
+    <section class="dashboard">
+      <section class="card" id="fsArea" title="点击切换全屏（桌面）">
+        <h2>日历信息卡片</h2>
+        <a href="https://time.is/Shanghai" id="time_is_link" rel="nofollow">
+          Powered by Time.is（上海时间）
+        </a>
+        <span id="Shanghai_z43d"></span>
+      </section>
+      <section class="card">
+        <h2>日程信息卡片</h2>
+        <p>聚合今日待办与提醒，保持对关键安排的掌控。</p>
+        <ul class="info-list">
+          <li>
+            <strong>09:30</strong>
+            <span>产品评审 · 会议室 A</span>
+          </li>
+          <li>
+            <strong>13:00</strong>
+            <span>项目同步 · 线上会议</span>
+          </li>
+          <li>
+            <strong>17:30</strong>
+            <span>日报整理 · 发送前确认</span>
+          </li>
+        </ul>
+      </section>
     </section>
   </main>
 
