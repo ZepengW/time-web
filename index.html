@@ -1,234 +1,944 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-
-  <!-- iOS 主屏幕 Web App（接近真全屏） -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="上海时钟">
   <meta name="theme-color" content="#0b1020">
 
-  <link rel="manifest" href="./manifest.webmanifest">
-
-  <title>上海时间 · Time.is</title>
+  <title>时间大屏 · Time Web</title>
 
   <style>
     :root{
       --bg: #0b1020;
-      --card: rgba(255,255,255,.06);
-      --card2: rgba(255,255,255,.10);
-      --text: rgba(255,255,255,.92);
+      --bg-2: #0f172a;
+      --card: rgba(255,255,255,.07);
+      --card-strong: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.94);
       --muted: rgba(255,255,255,.70);
-      --line: rgba(255,255,255,.14);
+      --line: rgba(255,255,255,.16);
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
       --shadow: 0 24px 60px rgba(0,0,0,.35);
+      --screen-scale: 1;
+      --stage-w: 1600px;
+      --stage-h: 960px;
+      --edge-pad: clamp(10px, 1.4vw, 18px);
+      --edge-pad-bottom: clamp(14px, 2vw, 24px);
+      --panel-bottom-gap: clamp(12px, 2.2vw, 28px);
     }
+
     @media (prefers-color-scheme: light){
       :root{
         --bg: #f7f8fb;
+        --bg-2: #eef2ff;
         --card: rgba(0,0,0,.04);
-        --card2: rgba(0,0,0,.06);
-        --text: rgba(0,0,0,.88);
-        --muted: rgba(0,0,0,.62);
-        --line: rgba(0,0,0,.12);
-        --shadow: 0 20px 50px rgba(0,0,0,.10);
+        --card-strong: rgba(0,0,0,.08);
+        --text: rgba(8,15,27,.90);
+        --muted: rgba(8,15,27,.62);
+        --line: rgba(8,15,27,.12);
+        --accent: #0ea5e9;
+        --accent-2: #16a34a;
+        --shadow: 0 20px 50px rgba(0,0,0,.12);
       }
     }
 
-    /* ✅ 关键：彻底禁止滚动条（桌面/全屏都不出现） */
-    html, body{
-      height: 100%;
-      overflow: hidden;
-    }
+    html, body{ height:100%; }
 
     body{
       margin:0;
       color:var(--text);
-
-      /* iPhone 刘海/状态栏安全区 */
-      padding-top: calc(env(safe-area-inset-top) + clamp(24px, 6vh, 84px));
-      padding-bottom: env(safe-area-inset-bottom);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
-
       background:
-        radial-gradient(1200px 700px at 15% 15%, rgba(99,102,241,.30), transparent 60%),
-        radial-gradient(900px 600px at 85% 25%, rgba(16,185,129,.22), transparent 55%),
-        radial-gradient(1000px 700px at 60% 90%, rgba(59,130,246,.22), transparent 60%),
-        var(--bg);
-
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC",
-        "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
-
+        radial-gradient(900px 520px at 15% 15%, rgba(56,189,248,.22), transparent 60%),
+        radial-gradient(900px 620px at 85% 20%, rgba(34,197,94,.20), transparent 60%),
+        radial-gradient(900px 520px at 50% 90%, rgba(129,140,248,.18), transparent 60%),
+        linear-gradient(160deg, var(--bg), var(--bg-2));
+      font-family: "Avenir Next", "HarmonyOS Sans", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
       display:flex;
-      align-items:flex-start;
       justify-content:center;
+      align-items:center;
       box-sizing:border-box;
+      padding-top: calc(env(safe-area-inset-top) + var(--edge-pad));
+      padding-bottom: calc(env(safe-area-inset-bottom) + var(--edge-pad-bottom));
+      padding-left: calc(env(safe-area-inset-left) + var(--edge-pad));
+      padding-right: calc(env(safe-area-inset-right) + var(--edge-pad));
+      overflow: hidden;
     }
 
-    .wrap{
-      width:min(1200px, 100%);
-      padding: clamp(10px, 2vw, 24px);
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
-      box-sizing:border-box;
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background-image: linear-gradient(120deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 38%);
+      opacity:.35;
+      pointer-events:none;
+      mix-blend-mode: screen;
     }
 
-    .dashboard-row{
+    .screen{
+      width: var(--stage-w);
+      height: var(--stage-h);
       display:grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-      gap: clamp(16px, 2.8vw, 32px);
-      width: min(1100px, 100%);
-      align-items: stretch;
+      grid-template-rows: auto 1fr;
+      gap: clamp(14px, 2.4vw, 28px);
+      padding: clamp(6px, 1.2vw, 16px);
+      box-sizing:border-box;
+      transform: scale(var(--screen-scale));
+      transform-origin: center center;
+    }
+
+    .top-info{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height: clamp(80px, 12vh, 140px);
+      text-align:center;
+    }
+
+    .time-wrap{
+      display:flex;
+      align-items:baseline;
+      justify-content:center;
+      gap: clamp(16px, 3vw, 42px);
+      flex-wrap:nowrap;
+      letter-spacing:.04em;
+    }
+
+    .time{
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(48px, 8.4vw, 128px);
+      line-height:1;
+      text-shadow: 0 16px 32px rgba(0,0,0,.35);
+      white-space: nowrap;
+    }
+
+    .date{
+      font-size: clamp(18px, 2.4vw, 34px);
+      color: var(--muted);
+      letter-spacing:.08em;
+      white-space: nowrap;
+    }
+
+    .meta{
+      position:absolute;
+      top:0;
+      right:0;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size: clamp(13px, 1.6vw, 17px);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .settings-link{
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      text-decoration:none;
+      color: var(--text);
+      background: rgba(255,255,255,.06);
+      transition: transform .2s ease, background .2s ease;
+    }
+
+    .settings-link:hover{
+      background: rgba(255,255,255,.12);
+      transform: translateY(-1px);
+    }
+
+    .ghost-btn{
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      cursor:pointer;
+      transition: transform .2s ease, background .2s ease;
+    }
+
+    .ghost-btn:hover{
+      background: rgba(255,255,255,.12);
+      transform: translateY(-1px);
+    }
+
+    .bottom-panels{
+      display:grid;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+      gap: clamp(12px, 2.2vw, 24px);
+      align-items:stretch;
+      position:relative;
+      height: calc(100% - var(--panel-bottom-gap));
+      align-self: start;
+    }
+
+    .bottom-panels.is-agenda-collapsed{
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .bottom-panels.is-agenda-collapsed .agenda-card{
+      display:none;
     }
 
     .card{
-      user-select:none;
-      cursor: pointer;
       position:relative;
       overflow:hidden;
       border:1px solid var(--line);
-      background: linear-gradient(180deg, var(--card), var(--card2));
-      border-radius: 22px;
+      border-radius: 24px;
+      padding: clamp(14px, 2.2vw, 26px);
+      background: linear-gradient(180deg, var(--card), var(--card-strong));
       box-shadow: var(--shadow);
-      padding: clamp(18px, 2.6vw, 36px);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display:flex;
+      flex-direction:column;
+      height:100%;
+    }
+
+    .agenda-card.is-collapsed{
+      min-height: unset;
+    }
+
+    .agenda-card.is-collapsed .agenda-list,
+    .agenda-card.is-collapsed .sync-status{
+      display:none;
+    }
+
+    .card-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom: clamp(12px, 2vw, 20px);
+    }
+
+    .card-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
     }
 
     .card h2{
-      margin: 0 0 12px;
-      font-size: clamp(18px, 2.2vw, 26px);
-      letter-spacing: .02em;
+      margin:0;
+      font-size: clamp(20px, 2.6vw, 30px);
+      letter-spacing:.06em;
+      white-space: nowrap;
     }
 
-    .card p{
-      margin: 0 0 16px;
+    .month-nav{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .collapse-btn{
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      font-size:18px;
+      line-height:1;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .month-nav button{
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      font-size:18px;
+      cursor:pointer;
+    }
+
+    .month-label{
+      font-size: clamp(16px, 1.8vw, 20px);
       color: var(--muted);
-      font-size: clamp(13px, 1.6vw, 16px);
-      line-height: 1.6;
+      letter-spacing:.04em;
+      min-width: 120px;
+      text-align:center;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
     }
 
-    .info-list{
+    .weekdays{
+      display:grid;
+      grid-template-columns: repeat(7, var(--day-size));
+      justify-content:center;
+      gap:6px;
+      font-size: clamp(13px, 1.5vw, 16px);
+      color: var(--muted);
+      margin-bottom:10px;
+      text-align:center;
+    }
+
+    .calendar-card{
+      --day-size: 42px;
+    }
+
+    .calendar-grid{
+      display:grid;
+      grid-template-columns: repeat(7, var(--day-size));
+      grid-template-rows: repeat(6, var(--day-size));
+      gap:6px;
+      flex:1;
+      min-height:0;
+      align-content:start;
+      justify-content:center;
+    }
+
+    .day{
+      position:relative;
+      border-radius:14px;
+      border:1px solid transparent;
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      width: var(--day-size);
+      height: var(--day-size);
+      font-size: clamp(13px, 1.8vw, 19px);
+      cursor:pointer;
+      font-variant-numeric: tabular-nums;
+      transition: transform .2s ease, border .2s ease, background .2s ease;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .day:hover{ transform: translateY(-2px); border-color: rgba(255,255,255,.2); }
+    .day.is-muted{ opacity:.45; }
+    .day.is-today{ border-color: var(--accent); box-shadow: 0 0 0 1px rgba(56,189,248,.3); }
+    .day.is-selected{ background: rgba(56,189,248,.18); border-color: var(--accent); }
+    .day.has-events::after{
+      content:"";
+      position:absolute;
+      width:6px;
+      height:6px;
+      border-radius:999px;
+      background: var(--accent-2);
+      bottom:10px;
+      right:10px;
+      box-shadow: 0 0 12px rgba(34,197,94,.6);
+    }
+
+    .agenda-date{
+      font-size: clamp(16px, 1.8vw, 20px);
+      color: var(--muted);
+      letter-spacing:.04em;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+
+    .agenda-list{
       display:flex;
       flex-direction:column;
-      gap: 12px;
-      margin:0;
-      padding:0;
-      list-style:none;
-      font-size: clamp(14px, 1.7vw, 18px);
-    }
-    .info-list span{
-      color: var(--muted);
-      font-size: clamp(12px, 1.5vw, 15px);
-      letter-spacing: .02em;
+      gap:12px;
+      overflow:hidden;
+      padding-right:6px;
     }
 
-    #time_is_link{
-      display:inline-block;
-      font-size: clamp(13px, 1.5vw, 18px) !important;
-      color: var(--muted);
-      text-decoration:none;
-      margin-bottom: 10px;
-      cursor: pointer;
+    .event{
+      display:grid;
+      grid-template-columns: 112px 1fr;
+      gap:12px;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      overflow:hidden;
     }
-    #time_is_link:hover{ text-decoration: underline; color: var(--text); }
 
-    #Shanghai_z43d{
-      display:block;
+    .event-time{
       font-variant-numeric: tabular-nums;
-      letter-spacing: .02em;
-      line-height: 1.22;
-      font-size: clamp(26px, 4.6vw, 78px) !important;
+      font-size: clamp(15px, 1.8vw, 20px);
+      color: var(--accent);
+      white-space: nowrap;
     }
-    #Shanghai_z43d br{ line-height: 1.35; }
+
+    .event-title{
+      font-size: clamp(15px, 1.8vw, 20px);
+      font-weight:600;
+      margin-bottom:4px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-meta{
+      color: var(--muted);
+      font-size: clamp(13px, 1.5vw, 15px);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empty{
+      border:1px dashed var(--line);
+      border-radius:16px;
+      padding:18px;
+      color: var(--muted);
+      text-align:center;
+    }
+
+    .sync-status{
+      margin-top:12px;
+      color: var(--muted);
+      font-size: clamp(11px, 1.3vw, 13px);
+    }
 
     @media (max-width: 980px){
-      .dashboard-row{
-        grid-template-columns: minmax(0, 1fr);
-      }
+      .meta{ position:static; margin-top:10px; }
+      .top-info{ flex-direction:column; gap:10px; }
+      .event{ grid-template-columns: 72px 1fr; }
     }
 
-    @media (min-width: 1280px){
-      .dashboard-row{
-        width: min(1160px, 100%);
-      }
+    @media (max-width: 980px){
+      .bottom-panels{ grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: clamp(12px, 2.4vw, 22px); }
+    }
+
+    @media (max-width: 820px){
+      .bottom-panels{ grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); gap: 12px; }
     }
   </style>
 </head>
 
 <body>
-  <main class="wrap">
-    <section class="dashboard-row">
-      <section class="card calendar-card" id="fsArea" title="点击切换全屏（桌面）">
-        <h2>日历信息卡片</h2>
-        <a href="https://time.is/Shanghai" id="time_is_link" rel="nofollow">
-          Powered by Time.is（上海时间）
-        </a>
-        <span id="Shanghai_z43d"></span>
+  <main class="screen">
+    <header class="top-info">
+      <div class="time-wrap">
+        <div class="time" id="timeText">--:--</div>
+        <div class="date" id="dateText">----</div>
+      </div>
+      <div class="meta">
+        <span id="tzLabel">Asia/Shanghai</span>
+        <button class="ghost-btn" type="button" id="fullscreenBtn">全屏</button>
+        <a class="settings-link" href="settings.html">设置</a>
+      </div>
+    </header>
+
+    <section class="bottom-panels">
+      <section class="card calendar-card" aria-label="日历">
+        <div class="card-header">
+          <h2>日历</h2>
+          <div class="card-actions">
+            <div class="month-nav">
+              <button type="button" id="prevMonth" aria-label="上个月">‹</button>
+              <div class="month-label" id="monthLabel"></div>
+              <button type="button" id="nextMonth" aria-label="下个月">›</button>
+            </div>
+            <button class="collapse-btn" type="button" id="toggleAgenda" aria-expanded="true" aria-label="折叠日程">-</button>
+          </div>
+        </div>
+        <div class="weekdays" id="weekdayRow"></div>
+        <div class="calendar-grid" id="calendarGrid"></div>
       </section>
-      <section class="card agenda-card">
-        <h2>日程信息卡片</h2>
-        <p>聚合今日待办与提醒，保持对关键安排的掌控。</p>
-        <ul class="info-list">
-          <li>
-            <strong>09:30</strong>
-            <span>产品评审 · 会议室 A</span>
-          </li>
-          <li>
-            <strong>13:00</strong>
-            <span>项目同步 · 线上会议</span>
-          </li>
-          <li>
-            <strong>17:30</strong>
-            <span>日报整理 · 发送前确认</span>
-          </li>
-        </ul>
+
+      <section class="card agenda-card" aria-label="日程">
+        <div class="card-header">
+          <h2>日程</h2>
+          <div class="agenda-date" id="agendaDate"></div>
+        </div>
+        <div class="agenda-list" id="agendaList"></div>
+        <div class="sync-status" id="syncStatus">日历订阅：未配置</div>
       </section>
     </section>
   </main>
 
-  <script src="//widget.time.is/zh.js"></script>
   <script>
-    time_is_widget.init({
-      Shanghai_z43d:{
-        template:"DATE",
-        date_format:"year-monthnum-daynum dname",
-        coords:"31.2222200,121.4580600"
+    const DEFAULT_CONFIG = {
+      timezone: "Asia/Shanghai",
+      hour12: false,
+      showSeconds: true,
+      weekStart: 1,
+      subscriptions: [],
+      events: [
+        { date: "2026-01-29", time: "09:30", end: "10:30", title: "产品评审", location: "会议室 A", source: "手动" },
+        { date: "2026-01-29", time: "13:00", end: "14:00", title: "项目同步", location: "线上会议", source: "手动" },
+        { date: "2026-01-29", time: "17:30", end: "18:00", title: "日报整理", location: "发送前确认", source: "手动" }
+      ]
+    };
+
+    const storageKey = "tw_config";
+
+    function clone(obj){
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function getCookie(name){
+      const escaped = name.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1");
+      const match = document.cookie.match(new RegExp("(?:^|; )" + escaped + "=([^;]*)"));
+      return match ? match[1] : null;
+    }
+
+    function canUseLocalStorage(){
+      try {
+        const testKey = "__tw_test__";
+        localStorage.setItem(testKey, "1");
+        localStorage.removeItem(testKey);
+        return true;
+      } catch (err){
+        return false;
       }
+    }
+
+    function readStored(){
+      let raw = null;
+      if (canUseLocalStorage()){
+        raw = localStorage.getItem(storageKey);
+      }
+      if (!raw){
+        raw = getCookie(storageKey);
+      }
+      return raw;
+    }
+
+    function loadConfig(){
+      const raw = readStored();
+      if (!raw) return clone(DEFAULT_CONFIG);
+      try {
+        const parsed = JSON.parse(decodeURIComponent(raw));
+        const config = { ...clone(DEFAULT_CONFIG), ...parsed };
+        config.events = Array.isArray(parsed.events) ? parsed.events : clone(DEFAULT_CONFIG.events);
+        config.subscriptions = Array.isArray(parsed.subscriptions) ? parsed.subscriptions : [];
+        return config;
+      } catch (err){
+        return clone(DEFAULT_CONFIG);
+      }
+    }
+
+    function formatDateKey(year, monthIndex, day){
+      const mm = String(monthIndex + 1).padStart(2, "0");
+      const dd = String(day).padStart(2, "0");
+      return `${year}-${mm}-${dd}`;
+    }
+
+    function getTodayString(timeZone){
+      const fmt = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      });
+      return fmt.format(new Date());
+    }
+
+    function getWeekdayIndex(year, monthIndex, day, timeZone){
+      const date = new Date(Date.UTC(year, monthIndex, day, 12, 0, 0));
+      const weekday = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(date);
+      const map = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+      return map[weekday];
+    }
+
+    function buildWeekdaysRow(weekStart){
+      const labels = ["日", "一", "二", "三", "四", "五", "六"];
+      const row = [];
+      for (let i=0; i<7; i++){
+        row.push(labels[(weekStart + i) % 7]);
+      }
+      return row;
+    }
+
+    function formatDateDisplay(dateStr, timeZone){
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+      const fmt = new Intl.DateTimeFormat("zh-CN", {
+        timeZone,
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "short"
+      });
+      return fmt.format(date);
+    }
+
+    function parseIcsDate(value, params, timeZone){
+      if (!value) return null;
+      const isDateOnly = params.VALUE === "DATE" || value.length === 8;
+      if (isDateOnly){
+        return { date: `${value.slice(0,4)}-${value.slice(4,6)}-${value.slice(6,8)}`, allDay: true };
+      }
+      const hasZ = value.endsWith("Z");
+      const tzid = params.TZID || null;
+      const raw = value.replace("Z", "");
+      const year = Number(raw.slice(0,4));
+      const month = Number(raw.slice(4,6));
+      const day = Number(raw.slice(6,8));
+      const hour = Number(raw.slice(9,11) || 0);
+      const minute = Number(raw.slice(11,13) || 0);
+      const second = Number(raw.slice(13,15) || 0);
+
+      if (hasZ){
+        const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+        const fmt = new Intl.DateTimeFormat("en-CA", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        });
+        const parts = fmt.formatToParts(date);
+        const get = (type) => parts.find(p => p.type === type)?.value || "";
+        return {
+          date: `${get("year")}-${get("month")}-${get("day")}`,
+          time: `${get("hour")}:${get("minute")}`,
+          tzid
+        };
+      }
+
+      return {
+        date: `${String(year).padStart(4,"0")}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`,
+        time: `${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}`,
+        tzid
+      };
+    }
+
+    function parseIcs(text, timeZone){
+      const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+      const unfolded = [];
+      for (const line of lines){
+        if (line.startsWith(" ") || line.startsWith("\t")){
+          if (unfolded.length) unfolded[unfolded.length - 1] += line.slice(1);
+        } else {
+          unfolded.push(line);
+        }
+      }
+
+      const events = [];
+      let current = null;
+
+      for (const line of unfolded){
+        if (line === "BEGIN:VEVENT"){
+          current = {};
+          continue;
+        }
+        if (line === "END:VEVENT"){
+          if (current && current.dtstart){
+            events.push(current);
+          }
+          current = null;
+          continue;
+        }
+        if (!current) continue;
+
+        const match = line.match(/^([^:]+):(.*)$/);
+        if (!match) continue;
+        const rawKey = match[1];
+        const value = match[2];
+        const parts = rawKey.split(";");
+        const key = parts[0].toUpperCase();
+        const params = {};
+        for (const part of parts.slice(1)){
+          const [pKey, pValue] = part.split("=");
+          if (pKey && pValue) params[pKey.toUpperCase()] = pValue;
+        }
+
+        if (key === "SUMMARY") current.summary = value;
+        if (key === "LOCATION") current.location = value;
+        if (key === "DTSTART") current.dtstart = parseIcsDate(value, params, timeZone);
+        if (key === "DTEND") current.dtend = parseIcsDate(value, params, timeZone);
+      }
+
+      return events.map(item => {
+        const data = item.dtstart || {};
+        return {
+          date: data.date,
+          time: data.time,
+          end: item.dtend ? item.dtend.time : "",
+          allDay: data.allDay,
+          title: item.summary || "(无标题)",
+          location: item.location || "",
+          source: "订阅"
+        };
+      });
+    }
+
+    const config = loadConfig();
+    const screenEl = document.querySelector(".screen");
+    const calendarCard = document.querySelector(".calendar-card");
+    const timeEl = document.getElementById("timeText");
+    const dateEl = document.getElementById("dateText");
+    const tzLabel = document.getElementById("tzLabel");
+    const monthLabel = document.getElementById("monthLabel");
+    const calendarGrid = document.getElementById("calendarGrid");
+    const agendaList = document.getElementById("agendaList");
+    const agendaDate = document.getElementById("agendaDate");
+    const weekdayRow = document.getElementById("weekdayRow");
+    const syncStatus = document.getElementById("syncStatus");
+    const agendaCard = document.querySelector(".agenda-card");
+    const toggleAgenda = document.getElementById("toggleAgenda");
+    const bottomPanels = document.querySelector(".bottom-panels");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+    tzLabel.textContent = config.timezone;
+    weekdayRow.innerHTML = buildWeekdaysRow(config.weekStart).map(label => `<div>${label}</div>`).join("");
+
+    let selectedDate = getTodayString(config.timezone);
+    let [viewYear, viewMonth] = selectedDate.split("-").map((value, idx) => idx === 1 ? Number(value) - 1 : Number(value));
+    let eventMap = {};
+    let agendaCollapsed = false;
+
+    function updateCalendarGridSize(){
+      if (!calendarGrid || !calendarCard) return;
+      const style = getComputedStyle(calendarGrid);
+      const gapX = parseFloat(style.columnGap) || parseFloat(style.gap) || 0;
+      const gapY = parseFloat(style.rowGap) || parseFloat(style.gap) || 0;
+      const cols = 7;
+      const rows = 6;
+      const width = calendarGrid.clientWidth;
+      const height = calendarGrid.clientHeight;
+      if (!width || !height) return;
+      const sizeByWidth = (width - gapX * (cols - 1)) / cols;
+      const sizeByHeight = (height - gapY * (rows - 1)) / rows;
+      const daySize = Math.max(18, Math.floor(Math.min(sizeByWidth, sizeByHeight)));
+      calendarCard.style.setProperty("--day-size", `${daySize}px`);
+    }
+
+    function setAgendaCollapsed(next){
+      agendaCollapsed = next;
+      agendaCard.classList.toggle("is-collapsed", agendaCollapsed);
+      bottomPanels.classList.toggle("is-agenda-collapsed", agendaCollapsed);
+      toggleAgenda.setAttribute("aria-expanded", String(!agendaCollapsed));
+      toggleAgenda.textContent = agendaCollapsed ? "+" : "-";
+      toggleAgenda.setAttribute("aria-label", agendaCollapsed ? "展开日程" : "折叠日程");
+      updateScale();
+      updateCalendarGridSize();
+    }
+
+    function buildEventMap(events){
+      const map = {};
+      for (const event of events){
+        if (!event.date) continue;
+        if (!map[event.date]) map[event.date] = [];
+        map[event.date].push(event);
+      }
+      return map;
+    }
+
+    function renderCalendar(){
+      const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+      const prevMonthDays = new Date(Date.UTC(viewYear, viewMonth, 0)).getUTCDate();
+      const firstDow = getWeekdayIndex(viewYear, viewMonth, 1, config.timezone);
+      const leading = (firstDow - config.weekStart + 7) % 7;
+      const todayStr = getTodayString(config.timezone);
+
+      monthLabel.textContent = `${viewYear}年 ${viewMonth + 1}月`;
+      calendarGrid.innerHTML = "";
+
+      for (let i = 0; i < 42; i++){
+        let dayNum;
+        let cellMonth = viewMonth;
+        let cellYear = viewYear;
+        let inMonth = true;
+
+        if (i < leading){
+          dayNum = prevMonthDays - leading + i + 1;
+          cellMonth = viewMonth - 1;
+          cellYear = viewYear;
+          if (cellMonth < 0){ cellMonth = 11; cellYear -= 1; }
+          inMonth = false;
+        } else if (i >= leading + daysInMonth){
+          dayNum = i - (leading + daysInMonth) + 1;
+          cellMonth = viewMonth + 1;
+          cellYear = viewYear;
+          if (cellMonth > 11){ cellMonth = 0; cellYear += 1; }
+          inMonth = false;
+        } else {
+          dayNum = i - leading + 1;
+        }
+
+        const dateStr = formatDateKey(cellYear, cellMonth, dayNum);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "day";
+        btn.textContent = dayNum;
+        btn.dataset.date = dateStr;
+
+        if (!inMonth) btn.classList.add("is-muted");
+        if (dateStr === selectedDate) btn.classList.add("is-selected");
+        if (dateStr === todayStr) btn.classList.add("is-today");
+        if (eventMap[dateStr]) btn.classList.add("has-events");
+
+        btn.addEventListener("click", () => {
+          selectedDate = dateStr;
+          viewYear = cellYear;
+          viewMonth = cellMonth;
+          renderCalendar();
+          renderAgenda();
+        });
+
+        calendarGrid.appendChild(btn);
+      }
+      updateCalendarGridSize();
+    }
+
+    function renderAgenda(){
+      agendaDate.textContent = formatDateDisplay(selectedDate, config.timezone);
+      const events = (eventMap[selectedDate] || []).slice().sort((a, b) => {
+        const timeA = a.allDay ? "00:00" : (a.time || "99:99");
+        const timeB = b.allDay ? "00:00" : (b.time || "99:99");
+        return timeA.localeCompare(timeB);
+      });
+
+      if (!events.length){
+        agendaList.innerHTML = `<div class="empty">暂无日程</div>`;
+        return;
+      }
+
+      agendaList.innerHTML = events.map(event => {
+        const timeText = event.allDay ? "全天" : (event.time || "待定");
+        const range = event.end ? ` - ${event.end}` : "";
+        const metaParts = [];
+        if (event.location) metaParts.push(event.location);
+        if (event.source) metaParts.push(event.source);
+        const metaText = metaParts.length ? ` · ${metaParts.join(" · ")}` : "";
+        return `
+          <div class="event">
+            <div class="event-time">${timeText}${range}</div>
+            <div>
+              <div class="event-title">${event.title}</div>
+              <div class="event-meta">${metaText}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateScale(){
+      const bodyStyle = getComputedStyle(document.body);
+      const padX = parseFloat(bodyStyle.paddingLeft) + parseFloat(bodyStyle.paddingRight);
+      const padY = parseFloat(bodyStyle.paddingTop) + parseFloat(bodyStyle.paddingBottom);
+      const availableW = Math.max(0, window.innerWidth - padX);
+      const availableH = Math.max(0, window.innerHeight - padY);
+      const rootStyle = getComputedStyle(document.documentElement);
+      const stageW = parseFloat(rootStyle.getPropertyValue("--stage-w")) || 1600;
+      const stageH = parseFloat(rootStyle.getPropertyValue("--stage-h")) || 960;
+      const scale = Math.min(availableW / stageW, availableH / stageH);
+      const clamped = Math.max(0.35, scale);
+      document.documentElement.style.setProperty("--screen-scale", clamped.toFixed(3));
+    }
+
+    function updateFullscreenLabel(){
+      const isFullscreen = !!document.fullscreenElement;
+      fullscreenBtn.textContent = isFullscreen ? "退出全屏" : "全屏";
+    }
+
+    function updateClock(){
+      const now = new Date();
+      const timeOptions = {
+        timeZone: config.timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: config.hour12
+      };
+      if (config.showSeconds) timeOptions.second = "2-digit";
+      const timeFormatter = new Intl.DateTimeFormat("zh-CN", timeOptions);
+      const parts = new Intl.DateTimeFormat("zh-CN", {
+        timeZone: config.timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        weekday: "short"
+      }).formatToParts(now);
+      const get = (type) => parts.find(p => p.type === type)?.value || "";
+      dateEl.textContent = `${get("year")}年${get("month")}月${get("day")}日 ${get("weekday")}`;
+      timeEl.textContent = timeFormatter.format(now);
+    }
+
+    async function loadSubscriptionEvents(){
+      if (!config.subscriptions.length){
+        syncStatus.textContent = "日历订阅：未配置";
+        return [];
+      }
+
+      syncStatus.textContent = "日历订阅：同步中...";
+      const tasks = config.subscriptions.map(async (url) => {
+        const response = await fetch(url, { cache: "no-cache" });
+        if (!response.ok) throw new Error(`订阅失败：${url}`);
+        const text = await response.text();
+        return parseIcs(text, config.timezone);
+      });
+
+      const results = await Promise.allSettled(tasks);
+      const events = [];
+      const errors = [];
+      for (const result of results){
+        if (result.status === "fulfilled"){
+          events.push(...result.value);
+        } else {
+          errors.push(result.reason?.message || "订阅失败");
+        }
+      }
+
+      if (errors.length){
+        syncStatus.textContent = `日历订阅：${events.length} 条（部分失败）`;
+      } else {
+        syncStatus.textContent = `日历订阅：${events.length} 条已同步`;
+      }
+
+      return events;
+    }
+
+    async function init(){
+      updateClock();
+      setInterval(updateClock, config.showSeconds ? 1000 : 60000);
+
+      const manualEvents = Array.isArray(config.events) ? config.events : [];
+      const subscriptionEvents = await loadSubscriptionEvents();
+      eventMap = buildEventMap([...manualEvents, ...subscriptionEvents]);
+
+      renderCalendar();
+      renderAgenda();
+      setAgendaCollapsed(false);
+    }
+
+    document.getElementById("prevMonth").addEventListener("click", () => {
+      viewMonth -= 1;
+      if (viewMonth < 0){ viewMonth = 11; viewYear -= 1; }
+      renderCalendar();
     });
 
-    (function () {
-      const area = document.getElementById('fsArea');
-      const link = document.getElementById('time_is_link');
+    document.getElementById("nextMonth").addEventListener("click", () => {
+      viewMonth += 1;
+      if (viewMonth > 11){ viewMonth = 0; viewYear += 1; }
+      renderCalendar();
+    });
 
-      // 链接只跳转，不触发全屏
-      link.addEventListener('click', (ev) => ev.stopPropagation());
+    toggleAgenda.addEventListener("click", () => {
+      setAgendaCollapsed(!agendaCollapsed);
+    });
 
-      // 其它区域点击：桌面浏览器全屏切换（iOS Safari 多数不支持，调用也没事）
-      async function toggleFullscreen() {
-        try {
-          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-            await document.documentElement.requestFullscreen();
-          } else if (document.exitFullscreen) {
-            await document.exitFullscreen();
-          }
-        } catch (e) {}
-      }
-      area.addEventListener('click', () => toggleFullscreen());
-
-      // iPhone Safari 中尽量触发地址栏收起：只在“Safari 内打开”时尝试
-      // 如果是“添加到主屏幕后（standalone）”，本来就没有地址栏，没必要动
-      window.addEventListener('load', () => {
-        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        const isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
-        if (isIOS && !isStandalone) {
-          setTimeout(() => { try { window.scrollTo(0, 1); } catch(e) {} }, 80);
+    fullscreenBtn.addEventListener("click", async () => {
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if (document.exitFullscreen) {
+          await document.exitFullscreen();
         }
-      });
-    })();
+      } catch (err) {}
+      updateFullscreenLabel();
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      updateFullscreenLabel();
+      updateScale();
+    });
+    window.addEventListener("resize", updateScale);
+    window.addEventListener("resize", updateCalendarGridSize);
+
+    init();
+    updateScale();
+    updateFullscreenLabel();
   </script>
 </body>
 </html>

@@ -1,0 +1,428 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020">
+  <title>设置 · 时间大屏</title>
+
+  <style>
+    :root{
+      --bg: #0b1020;
+      --bg-2: #0f172a;
+      --card: rgba(255,255,255,.08);
+      --card-strong: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.94);
+      --muted: rgba(255,255,255,.68);
+      --line: rgba(255,255,255,.16);
+      --accent: #38bdf8;
+      --shadow: 0 24px 60px rgba(0,0,0,.35);
+    }
+
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg: #f7f8fb;
+        --bg-2: #eef2ff;
+        --card: rgba(0,0,0,.04);
+        --card-strong: rgba(0,0,0,.08);
+        --text: rgba(8,15,27,.90);
+        --muted: rgba(8,15,27,.62);
+        --line: rgba(8,15,27,.12);
+        --accent: #0ea5e9;
+        --shadow: 0 20px 50px rgba(0,0,0,.12);
+      }
+    }
+
+    html, body{ height:100%; }
+
+    body{
+      margin:0;
+      color:var(--text);
+      background:
+        radial-gradient(900px 520px at 15% 15%, rgba(56,189,248,.22), transparent 60%),
+        radial-gradient(900px 620px at 85% 20%, rgba(34,197,94,.18), transparent 60%),
+        linear-gradient(160deg, var(--bg), var(--bg-2));
+      font-family: "Avenir Next", "HarmonyOS Sans", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      padding: clamp(16px, 3vw, 40px);
+      box-sizing:border-box;
+    }
+
+    .container{
+      width:min(960px, 100%);
+      display:flex;
+      flex-direction:column;
+      gap: clamp(16px, 3vw, 28px);
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    h1{
+      margin:0;
+      font-size: clamp(22px, 3vw, 32px);
+      letter-spacing:.06em;
+    }
+
+    .back-link{
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      text-decoration:none;
+      color: var(--text);
+      background: rgba(255,255,255,.08);
+    }
+
+    .panel{
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding: clamp(18px, 2.6vw, 30px);
+      background: linear-gradient(180deg, var(--card), var(--card-strong));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .panel h2{
+      margin:0 0 12px;
+      font-size: clamp(18px, 2.2vw, 26px);
+    }
+
+    .panel p{
+      margin:0 0 16px;
+      color: var(--muted);
+      font-size: clamp(13px, 1.6vw, 16px);
+      line-height:1.6;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:16px;
+      font-size: clamp(13px, 1.6vw, 16px);
+    }
+
+    .field input,
+    .field select,
+    .field textarea{
+      width:100%;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding:10px 12px;
+      font-size: inherit;
+      box-sizing:border-box;
+    }
+
+    .field textarea{ min-height:120px; resize:vertical; }
+
+    .switch{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      margin-bottom:12px;
+    }
+
+    .switch input{ width:auto; }
+
+    .event-form{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .btn{
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(56,189,248,.2);
+      color: var(--text);
+      padding:10px 14px;
+      cursor:pointer;
+    }
+
+    .btn-secondary{
+      background: rgba(255,255,255,.06);
+    }
+
+    .event-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .event-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      font-size: clamp(12px, 1.4vw, 14px);
+    }
+
+    .event-item span{ color: var(--muted); }
+
+    .status{
+      color: var(--accent);
+      font-size: clamp(12px, 1.4vw, 14px);
+      margin-top:10px;
+    }
+
+    @media (max-width: 720px){
+      header{ flex-direction:column; align-items:flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>大屏设置</h1>
+      <a class="back-link" href="index.html">返回大屏</a>
+    </header>
+
+    <section class="panel">
+      <h2>显示设置</h2>
+      <p>这些设置会写入浏览器本地存储/ Cookie（不需要登录或数据库）。配置内容较多时，Cookie 可能无法保存全部内容。</p>
+      <div class="field">
+        <label for="timezone">时区</label>
+        <input id="timezone" type="text" placeholder="例如：Asia/Shanghai" />
+      </div>
+      <div class="switch">
+        <span>使用 24 小时制</span>
+        <input id="hour24" type="checkbox" />
+      </div>
+      <div class="switch">
+        <span>显示秒</span>
+        <input id="showSeconds" type="checkbox" />
+      </div>
+      <div class="field">
+        <label for="weekStart">一周起始</label>
+        <select id="weekStart">
+          <option value="1">周一</option>
+          <option value="0">周日</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>订阅日历</h2>
+      <p>每行填写一个 .ics 订阅地址。注意：若订阅源不允许跨域访问，浏览器会提示同步失败。</p>
+      <div class="field">
+        <label for="subscriptions">订阅地址</label>
+        <textarea id="subscriptions" placeholder="https://example.com/calendar.ics"></textarea>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>手动日程</h2>
+      <p>用于没有订阅源或临时添加的事项。</p>
+      <div class="event-form">
+        <input id="eventDate" type="date" />
+        <input id="eventTime" type="time" />
+        <input id="eventEnd" type="time" placeholder="结束时间" />
+        <input id="eventTitle" type="text" placeholder="标题" />
+        <input id="eventLocation" type="text" placeholder="地点" />
+      </div>
+      <button class="btn" id="addEvent">添加日程</button>
+      <div class="event-list" id="eventList"></div>
+    </section>
+
+    <section class="panel">
+      <h2>保存</h2>
+      <p>保存后返回大屏即可看到更新。</p>
+      <button class="btn" id="saveAll">保存设置</button>
+      <button class="btn btn-secondary" id="clearEvents">清空手动日程</button>
+      <div class="status" id="status"></div>
+    </section>
+  </div>
+
+  <script>
+    const DEFAULT_CONFIG = {
+      timezone: "Asia/Shanghai",
+      hour12: false,
+      showSeconds: true,
+      weekStart: 1,
+      subscriptions: [],
+      events: []
+    };
+
+    const storageKey = "tw_config";
+
+    function clone(obj){
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function getCookie(name){
+      const escaped = name.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1");
+      const match = document.cookie.match(new RegExp("(?:^|; )" + escaped + "=([^;]*)"));
+      return match ? match[1] : null;
+    }
+
+    function canUseLocalStorage(){
+      try {
+        const testKey = "__tw_test__";
+        localStorage.setItem(testKey, "1");
+        localStorage.removeItem(testKey);
+        return true;
+      } catch (err){
+        return false;
+      }
+    }
+
+    function setCookie(name, value, days){
+      const expires = new Date(Date.now() + days * 864e5).toUTCString();
+      document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
+    }
+
+    function readStored(){
+      let raw = null;
+      if (canUseLocalStorage()){
+        raw = localStorage.getItem(storageKey);
+      }
+      if (!raw){
+        raw = getCookie(storageKey);
+      }
+      return raw;
+    }
+
+    function writeStored(raw){
+      if (canUseLocalStorage()){
+        localStorage.setItem(storageKey, raw);
+      }
+      setCookie(storageKey, raw, 365);
+    }
+
+    function loadConfig(){
+      const raw = readStored();
+      if (!raw) return clone(DEFAULT_CONFIG);
+      try {
+        const parsed = JSON.parse(decodeURIComponent(raw));
+        const config = { ...clone(DEFAULT_CONFIG), ...parsed };
+        config.events = Array.isArray(parsed.events) ? parsed.events : [];
+        config.subscriptions = Array.isArray(parsed.subscriptions) ? parsed.subscriptions : [];
+        return config;
+      } catch {
+        return clone(DEFAULT_CONFIG);
+      }
+    }
+
+    const config = loadConfig();
+    const timezoneInput = document.getElementById("timezone");
+    const hour24 = document.getElementById("hour24");
+    const showSeconds = document.getElementById("showSeconds");
+    const weekStart = document.getElementById("weekStart");
+    const subscriptions = document.getElementById("subscriptions");
+    const eventList = document.getElementById("eventList");
+    const status = document.getElementById("status");
+
+    timezoneInput.value = config.timezone;
+    hour24.checked = !config.hour12;
+    showSeconds.checked = config.showSeconds;
+    weekStart.value = String(config.weekStart);
+    subscriptions.value = (config.subscriptions || []).join("\n");
+
+    function renderEvents(){
+      eventList.innerHTML = "";
+      if (!config.events.length){
+        eventList.innerHTML = `<div class="event-item">暂无手动日程</div>`;
+        return;
+      }
+      config.events.forEach((event, index) => {
+        const item = document.createElement("div");
+        item.className = "event-item";
+        item.innerHTML = `
+          <div>
+            <strong>${event.title || "(无标题)"}</strong>
+            <span> · ${event.date || ""} ${event.time || ""}</span>
+          </div>
+          <button class="btn btn-secondary" data-index="${index}">删除</button>
+        `;
+        item.querySelector("button").addEventListener("click", () => {
+          config.events.splice(index, 1);
+          renderEvents();
+        });
+        eventList.appendChild(item);
+      });
+    }
+
+    renderEvents();
+
+    document.getElementById("addEvent").addEventListener("click", () => {
+      const date = document.getElementById("eventDate").value;
+      const time = document.getElementById("eventTime").value;
+      const end = document.getElementById("eventEnd").value;
+      const title = document.getElementById("eventTitle").value.trim();
+      const location = document.getElementById("eventLocation").value.trim();
+
+      if (!date || !title){
+        status.textContent = "请填写日期和标题。";
+        return;
+      }
+
+      config.events.push({
+        date,
+        time,
+        end,
+        title,
+        location,
+        source: "手动"
+      });
+
+      document.getElementById("eventDate").value = "";
+      document.getElementById("eventTime").value = "";
+      document.getElementById("eventEnd").value = "";
+      document.getElementById("eventTitle").value = "";
+      document.getElementById("eventLocation").value = "";
+      status.textContent = "已添加。";
+      renderEvents();
+    });
+
+    document.getElementById("clearEvents").addEventListener("click", () => {
+      config.events = [];
+      renderEvents();
+      status.textContent = "已清空手动日程。";
+    });
+
+    document.getElementById("saveAll").addEventListener("click", () => {
+      const subs = subscriptions.value
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      const nextConfig = {
+        timezone: timezoneInput.value.trim() || "Asia/Shanghai",
+        hour12: !hour24.checked,
+        showSeconds: showSeconds.checked,
+        weekStart: Number(weekStart.value),
+        subscriptions: subs,
+        events: config.events
+      };
+
+      const encoded = encodeURIComponent(JSON.stringify(nextConfig));
+      if (encoded.length > 3500){
+        status.textContent = "配置过大，Cookie 可能无法保存。请减少订阅或手动日程。";
+        return;
+      }
+
+      writeStored(encoded);
+      status.textContent = "设置已保存，可返回大屏查看。";
+    });
+  </script>
+</body>
+</html>
