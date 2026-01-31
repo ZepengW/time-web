@@ -86,7 +86,7 @@
       max-width: var(--stage-w);
       max-height: var(--stage-h);
       display:grid;
-      grid-template-columns: minmax(360px, 0.7fr) minmax(260px, 0.3fr);
+      grid-template-columns: minmax(380px, 0.76fr) minmax(240px, 0.24fr);
       grid-template-rows: minmax(24vh, auto) minmax(0, 1fr);
       grid-template-areas:
         "time time"
@@ -248,15 +248,16 @@
       justify-content:space-between;
       gap:12px;
       margin-bottom: clamp(12px, calc(2 * var(--design-vw)), 20px);
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
 
     .card-actions{
       display:flex;
       align-items:center;
       gap:8px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       justify-content:flex-end;
+      min-width: 0;
     }
 
     .card h2{
@@ -270,6 +271,7 @@
       display:flex;
       align-items:center;
       gap:8px;
+      min-width: 0;
     }
 
     .collapse-btn{
@@ -302,7 +304,7 @@
       font-size: clamp(16px, calc(1.8 * var(--design-vw)), 20px);
       color: var(--muted);
       letter-spacing:.04em;
-      min-width: 120px;
+      min-width: 100px;
       text-align:center;
       white-space: nowrap;
       overflow:hidden;
@@ -345,7 +347,7 @@
       color: var(--text);
       width: var(--day-size);
       height: var(--day-size);
-      font-size: clamp(18px, min(3.2vw, 28px));
+      font-size: clamp(22px, calc(2.8 * var(--design-vw)), 32px);
       cursor:pointer;
       font-variant-numeric: tabular-nums;
       transition: transform .2s ease, border .2s ease, background .2s ease;
