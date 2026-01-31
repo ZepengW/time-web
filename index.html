@@ -347,7 +347,7 @@
       color: var(--text);
       width: var(--day-size);
       height: var(--day-size);
-      font-size: clamp(22px, calc(2.8 * var(--design-vw)), 32px);
+      font-size: var(--day-font-size, clamp(22px, calc(2.8 * var(--design-vw)), 32px));
       cursor:pointer;
       font-variant-numeric: tabular-nums;
       transition: transform .2s ease, border .2s ease, background .2s ease;
@@ -746,7 +746,9 @@
       if (!width) return;
       const sizeByWidth = (width - gapX * (cols - 1)) / cols;
       const daySize = Math.max(18, Math.floor(sizeByWidth));
+      const dayFont = Math.max(22, Math.min(36, Math.round(daySize * 0.7)));
       calendarCard.style.setProperty("--day-size", `${daySize}px`);
+      calendarCard.style.setProperty("--day-font-size", `${dayFont}px`);
       calendarGrid.style.height = `${daySize * rows + gapY * (rows - 1)}px`;
       syncCardHeights();
     }
