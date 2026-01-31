@@ -192,6 +192,15 @@
       transition: transform .2s ease, background .2s ease;
     }
 
+    .today-btn{
+      min-width: 64px;
+      max-width: 86px;
+      padding: 0 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .settings-link:hover,
     .ghost-btn:hover{
       background: rgba(255,255,255,.12);
@@ -239,12 +248,15 @@
       justify-content:space-between;
       gap:12px;
       margin-bottom: clamp(12px, calc(2 * var(--design-vw)), 20px);
+      flex-wrap: wrap;
     }
 
     .card-actions{
       display:flex;
       align-items:center;
-      gap:10px;
+      gap:8px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
     }
 
     .card h2{
@@ -456,6 +468,7 @@
         <div class="card-header">
           <h2>日历</h2>
           <div class="card-actions">
+            <button class="ghost-btn today-btn" type="button" id="todayBtn">今天</button>
             <div class="month-nav">
               <button type="button" id="prevMonth" aria-label="上个月">‹</button>
               <div class="month-label" id="monthLabel"></div>
@@ -710,6 +723,7 @@
     const agendaCard = document.querySelector(".agenda-card");
     const toggleAgenda = document.getElementById("toggleAgenda");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const todayBtn = document.getElementById("todayBtn");
 
     tzLabel.textContent = config.timezone;
     weekdayRow.innerHTML = buildWeekdaysRow(config.weekStart).map(label => `<div>${label}</div>`).join("");
@@ -760,8 +774,8 @@
       toggleAgenda.textContent = agendaCollapsed ? "+" : "-";
       toggleAgenda.setAttribute("aria-label", agendaCollapsed ? "展开日程" : "折叠日程");
       if (!skipResync){
-        updateScale();
         updateCalendarGridSize();
+        updateScale();
       }
     }
 
@@ -886,8 +900,8 @@
 
     function handleResize(){
       applyResponsiveCollapse();
-      updateScale();
       updateCalendarGridSize();
+      updateScale();
       syncCardHeights();
     }
 
@@ -975,6 +989,15 @@
       viewMonth += 1;
       if (viewMonth > 11){ viewMonth = 0; viewYear += 1; }
       renderCalendar();
+    });
+
+    todayBtn.addEventListener("click", () => {
+      selectedDate = getTodayString(config.timezone);
+      const [year, month] = selectedDate.split("-").map((value, idx) => idx === 1 ? Number(value) - 1 : Number(value));
+      viewYear = year;
+      viewMonth = month;
+      renderCalendar();
+      renderAgenda();
     });
 
     toggleAgenda.addEventListener("click", () => {
