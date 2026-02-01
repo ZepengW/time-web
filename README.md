@@ -14,6 +14,9 @@
 - 会议室/办公区大屏的时间与日程展示
 - 前台/大厅的实时日期与日历展示
 - 个人工作区的“今日安排”看板
+
+![application_smallscreen](docs/application_smallscreen.jpeg)
+
 - 课堂/培训教室的课程安排提示屏
 
 ## Demo 地址
