@@ -89,6 +89,8 @@
       --date-font: clamp(1.4vmin, calc(var(--time-row) * 0.18), 2.8vmin);
       --meta-font: clamp(1.2vmin, calc(var(--time-row) * 0.16), 1.8vmin);
       --time-btn-h: 3.8vmin;
+      --time-edge: clamp(0.8vmin, calc(1.2 * var(--design-vw)), 1.6vmin);
+      --time-stack-gap: 0.8vmin;
       --panel-text-scale: 1.12;
       --agenda-time-width: clamp(7.2vmin, calc(var(--day-size) * 1.6), 16vmin);
       --agenda-time-size: calc(clamp(1.5vmin, calc(var(--day-font-size) * 0.68), 2.4vmin) * var(--panel-text-scale));
@@ -151,6 +153,16 @@
       white-space: normal;
     }
 
+    .meta-actions{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:var(--time-stack-gap);
+      position:absolute;
+      top: calc(var(--time-edge) + var(--time-btn-h) + var(--time-stack-gap));
+      right: var(--time-edge);
+    }
+
     .time-card{
       grid-area: time;
       justify-self:stretch;
@@ -162,6 +174,13 @@
       justify-content:center;
       gap: clamp(1vmin, calc(1.8 * var(--design-vw)), 1.8vmin);
       text-align:center;
+    }
+
+    .refresh-btn{
+      position:absolute;
+      top: var(--time-edge);
+      right: var(--time-edge);
+      min-width: clamp(6.4vmin, calc(var(--time-btn-h) * 2), 9vmin);
     }
 
     .time-sub{
@@ -488,12 +507,15 @@
 <body>
   <main class="screen">
     <section class="card time-card" aria-label="时间">
+      <button class="ghost-btn refresh-btn" type="button" id="refreshBtn" aria-label="刷新">刷新</button>
       <div class="time-wrap">
         <div class="time" id="timeText">--:--</div>
       </div>
       <div class="time-sub">
         <div class="meta">
           <span id="tzLabel">Asia/Shanghai</span>
+        </div>
+        <div class="meta-actions">
           <button class="ghost-btn" type="button" id="fullscreenBtn">全屏</button>
           <a class="settings-link" href="settings.html">设置</a>
         </div>
@@ -773,6 +795,7 @@
     const timeCard = document.querySelector(".time-card");
     const timeWrap = document.querySelector(".time-wrap");
     const timeSub = document.querySelector(".time-sub");
+    const metaActions = document.querySelector(".meta-actions");
     const calendarCard = document.querySelector(".calendar-card");
     const timeEl = document.getElementById("timeText");
     const dateEl = document.getElementById("dateText");
@@ -786,6 +809,7 @@
     const agendaCard = document.querySelector(".agenda-card");
     const toggleAgenda = document.getElementById("toggleAgenda");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
     const todayBtn = document.getElementById("todayBtn");
 
     tzLabel.textContent = config.timezone;
@@ -799,6 +823,7 @@
     function updateTimeSizing(){
       if (!timeCard || !screenEl) return;
       const style = getComputedStyle(timeCard);
+      const screenStyle = getComputedStyle(screenEl);
       const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
       const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
       const gap = parseFloat(style.rowGap || style.gap) || 0;
@@ -806,9 +831,14 @@
       const availableW = Math.max(0, timeCard.clientWidth - padX);
       if (!availableH || !availableW) return;
 
-      const btnHeight = clamp(24, availableH * 0.28, 44);
-      const metaFont = clamp(11, availableH * 0.14, 22);
+      const edge = parseFloat(screenStyle.getPropertyValue("--time-edge")) || 0;
+      const stackGap = Math.max(availableH * 0.04, Math.min(availableH * 0.06, availableH * 0.08));
+      const maxStack = Math.max(0, availableH - edge * 2);
+      const maxBtn = Math.max(0, (maxStack - stackGap * 2) / 3);
+      const btnHeight = Math.max(1, Math.min(availableH * 0.28, maxBtn));
+      const metaFont = Math.max(1, Math.min(availableH * 0.18, btnHeight * 0.55));
       screenEl.style.setProperty("--time-btn-h", `${toVh(btnHeight).toFixed(3)}vh`);
+      screenEl.style.setProperty("--time-stack-gap", `${toVh(stackGap).toFixed(3)}vh`);
       screenEl.style.setProperty("--meta-font", `${toVh(metaFont).toFixed(3)}vh`);
 
       const metaHeight = timeSub ? timeSub.offsetHeight : 0;
@@ -822,9 +852,11 @@
           const scale = availableH / total;
           timeFont = Math.max(20, Math.floor(timeFont * scale));
         }
+        const reservedRight = Math.max(refreshBtn?.offsetWidth || 0, metaActions?.offsetWidth || 0) + edge;
+        const usableW = Math.max(0, availableW - reservedRight);
         const timeWidth = timeEl.scrollWidth;
-        if (timeWidth > availableW && timeWidth > 0){
-          const scale = availableW / timeWidth;
+        if (timeWidth > usableW && timeWidth > 0){
+          const scale = usableW / timeWidth;
           timeFont = Math.max(20, Math.floor(timeFont * scale));
         }
         screenEl.style.setProperty("--time-font", `${toVh(timeFont).toFixed(3)}vh`);
@@ -1148,6 +1180,10 @@
         }
       } catch (err) {}
       updateFullscreenLabel();
+    });
+
+    refreshBtn.addEventListener("click", () => {
+      window.location.reload();
     });
 
     document.addEventListener("fullscreenchange", () => {
