@@ -101,14 +101,15 @@
       max-height: var(--stage-h);
       display:grid;
       grid-template-columns: minmax(38vmin, 1fr) var(--agenda-width);
-      grid-template-rows: var(--time-row) minmax(0, 1fr);
+      grid-template-rows: var(--time-row) auto;
       grid-template-areas:
         "time time"
         "calendar agenda";
       gap: clamp(1.4vmin, calc(2.2 * var(--design-vw)), 2.4vmin);
       padding: clamp(0.6vmin, calc(1.1 * var(--design-vw)), 1.4vmin);
       box-sizing:border-box;
-      align-items:stretch;
+      align-items:start;
+      align-content:start;
       transform: scale(var(--screen-scale));
       transform-origin: top center;
     }
@@ -193,8 +194,18 @@
       margin-bottom: clamp(1vmin, calc(1.6 * var(--design-vw)), 1.6vmin);
     }
 
-    .calendar-card{ grid-area: calendar; align-self:stretch; min-height:0; }
-    .agenda-card{ grid-area: agenda; align-self:stretch; min-height:0; }
+    .calendar-card{
+      grid-area: calendar;
+      align-self:start;
+      height: auto;
+      min-height:0;
+    }
+    .agenda-card{
+      grid-area: agenda;
+      align-self:start;
+      height: auto;
+      min-height:0;
+    }
 
     .settings-link,
     .ghost-btn{
@@ -232,7 +243,7 @@
 
     .screen.is-agenda-collapsed{
       grid-template-columns: 1fr;
-      grid-template-rows: var(--time-row) minmax(0, 1fr);
+      grid-template-rows: var(--time-row) auto;
       grid-template-areas:
         "time"
         "calendar";
@@ -840,14 +851,19 @@
       if (!calendarGrid || !calendarCard) return;
       const style = getComputedStyle(calendarGrid);
       const cardStyle = getComputedStyle(calendarCard);
+      const screenStyle = getComputedStyle(screenEl);
+      const bodyStyle = getComputedStyle(document.body);
       const gapX = parseFloat(style.columnGap) || parseFloat(style.gap) || 0;
       const gapY = parseFloat(style.rowGap) || parseFloat(style.gap) || 0;
+      const rowGap = parseFloat(screenStyle.rowGap || screenStyle.gap) || 0;
       const cols = 7;
       const rows = 6;
       const padX = parseFloat(cardStyle.paddingLeft) + parseFloat(cardStyle.paddingRight);
       const availableW = Math.max(0, calendarCard.clientWidth - padX);
       if (!availableW) return;
       const padY = parseFloat(cardStyle.paddingTop) + parseFloat(cardStyle.paddingBottom);
+      const screenPadY = parseFloat(screenStyle.paddingTop) + parseFloat(screenStyle.paddingBottom);
+      const bodyPadY = parseFloat(bodyStyle.paddingTop) + parseFloat(bodyStyle.paddingBottom);
       const headerEl = calendarCard.querySelector(".card-header");
       const chipEl = calendarCard.querySelector(".today-chip");
       const weekdaysEl = calendarCard.querySelector(".weekdays");
@@ -856,7 +872,10 @@
       const weekdaysH = weekdaysEl ? weekdaysEl.offsetHeight : 0;
       const headerMargin = headerEl ? parseFloat(getComputedStyle(headerEl).marginBottom) || 0 : 0;
       const weekdaysMargin = weekdaysEl ? parseFloat(getComputedStyle(weekdaysEl).marginBottom) || 0 : 0;
-      const availableH = Math.max(0, calendarCard.clientHeight - padY - headerH - chipH - weekdaysH - headerMargin - weekdaysMargin);
+      const timeH = timeCard ? timeCard.offsetHeight : 0;
+      const viewportH = window.innerHeight || 0;
+      const maxRowH = Math.max(0, viewportH - bodyPadY - screenPadY - timeH - rowGap);
+      const availableH = Math.max(0, maxRowH - padY - headerH - chipH - weekdaysH - headerMargin - weekdaysMargin);
 
       const sizeByWidth = (availableW - gapX * (cols - 1)) / cols;
       const sizeByHeight = availableH > 0 ? (availableH - gapY * (rows - 1)) / rows : sizeByWidth;
@@ -879,8 +898,10 @@
         agendaCard.style.maxHeight = "";
         return;
       }
-      agendaCard.style.height = "100%";
-      agendaCard.style.maxHeight = "100%";
+      calendarCard.style.height = "";
+      calendarCard.style.maxHeight = "";
+      agendaCard.style.height = "";
+      agendaCard.style.maxHeight = "";
     }
 
     function setAgendaCollapsed(next, options = {}){
