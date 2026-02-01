@@ -192,46 +192,57 @@
 <body>
   <div class="container">
     <header>
-      <h1>大屏设置</h1>
-      <a class="back-link" href="index.html">返回大屏</a>
+      <h1 id="pageTitle">大屏设置</h1>
+      <a class="back-link" id="backLink" href="index.html">返回大屏</a>
     </header>
 
     <section class="panel">
-      <h2>显示设置</h2>
-      <p>这些设置会写入浏览器本地存储/ Cookie（不需要登录或数据库）。配置内容较多时，Cookie 可能无法保存全部内容。</p>
+      <h2 id="displayTitle">显示设置</h2>
+      <p id="displayDesc">这些设置会写入浏览器本地存储/ Cookie（不需要登录或数据库）。配置内容较多时，Cookie 可能无法保存全部内容。</p>
       <div class="field">
-        <label for="timezone">时区</label>
+        <label for="timezone" id="timezoneLabel">时区</label>
         <input id="timezone" type="text" placeholder="例如：Asia/Shanghai" />
       </div>
       <div class="switch">
-        <span>使用 24 小时制</span>
+        <span id="autoTimezoneLabel">自动检测时区</span>
+        <input id="autoTimezone" type="checkbox" />
+      </div>
+      <div class="field">
+        <label for="langSelect" id="langLabel">语言</label>
+        <select id="langSelect">
+          <option value="zh" id="langZh">中文</option>
+          <option value="en" id="langEn">English</option>
+        </select>
+      </div>
+      <div class="switch">
+        <span id="hour24Label">使用 24 小时制</span>
         <input id="hour24" type="checkbox" />
       </div>
       <div class="switch">
-        <span>显示秒</span>
+        <span id="showSecondsLabel">显示秒</span>
         <input id="showSeconds" type="checkbox" />
       </div>
       <div class="field">
-        <label for="weekStart">一周起始</label>
+        <label for="weekStart" id="weekStartLabel">一周起始</label>
         <select id="weekStart">
-          <option value="1">周一</option>
-          <option value="0">周日</option>
+          <option value="1" id="weekStartMon">周一</option>
+          <option value="0" id="weekStartSun">周日</option>
         </select>
       </div>
     </section>
 
     <section class="panel">
-      <h2>订阅日历</h2>
-      <p>每行填写一个 .ics 订阅地址。注意：若订阅源不允许跨域访问，浏览器会提示同步失败。</p>
+      <h2 id="subsTitle">订阅日历</h2>
+      <p id="subsDesc">每行填写一个 .ics 订阅地址。注意：若订阅源不允许跨域访问，浏览器会提示同步失败。</p>
       <div class="field">
-        <label for="subscriptions">订阅地址</label>
+        <label for="subscriptions" id="subsLabel">订阅地址</label>
         <textarea id="subscriptions" placeholder="https://example.com/calendar.ics"></textarea>
       </div>
     </section>
 
     <section class="panel">
-      <h2>手动日程</h2>
-      <p>用于没有订阅源或临时添加的事项。</p>
+      <h2 id="manualTitle">手动日程</h2>
+      <p id="manualDesc">用于没有订阅源或临时添加的事项。</p>
       <div class="event-form">
         <input id="eventDate" type="date" />
         <input id="eventTime" type="time" />
@@ -244,8 +255,8 @@
     </section>
 
     <section class="panel">
-      <h2>保存</h2>
-      <p>保存后返回大屏即可看到更新。</p>
+      <h2 id="saveTitle">保存</h2>
+      <p id="saveDesc">保存后返回大屏即可看到更新。</p>
       <button class="btn" id="saveAll">保存设置</button>
       <button class="btn btn-secondary" id="clearEvents">清空手动日程</button>
       <div class="status" id="status"></div>
@@ -253,7 +264,141 @@
   </div>
 
   <script>
+    const storageKey = "tw_config";
+    const urlParams = new URLSearchParams(window.location.search);
+
+    function normalizeLang(value){
+      const raw = (value || "").toLowerCase();
+      if (raw.startsWith("en")) return "en";
+      if (raw.startsWith("zh")) return "zh";
+      return null;
+    }
+
+    function getStoredLang(){
+      let raw = null;
+      try {
+        raw = localStorage.getItem(storageKey);
+      } catch (err) {}
+      if (!raw){
+        const escaped = storageKey.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1");
+        const match = document.cookie.match(new RegExp("(?:^|; )" + escaped + "=([^;]*)"));
+        raw = match ? match[1] : null;
+      }
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(decodeURIComponent(raw));
+        return normalizeLang(parsed.lang);
+      } catch (err){
+        return null;
+      }
+    }
+
+    const langParam = normalizeLang(urlParams.get("lang"));
+    const storedLang = getStoredLang();
+    const browserLang = normalizeLang(navigator.language);
+    const LANG = langParam || storedLang || browserLang || "zh";
+    const LOCALE = LANG === "en" ? "en-US" : "zh-CN";
+    document.documentElement.lang = LOCALE;
+
+    const I18N = {
+      zh: {
+        pageTitle: "大屏设置",
+        pageTitleFull: "设置 · 时间大屏",
+        back: "返回大屏",
+        displayTitle: "显示设置",
+        displayDesc: "这些设置会写入浏览器本地存储/ Cookie（不需要登录或数据库）。配置内容较多时，Cookie 可能无法保存全部内容。",
+        timezoneLabel: "时区",
+        timezonePlaceholder: "例如：Asia/Shanghai",
+        autoTimezoneLabel: "自动检测时区",
+        langLabel: "语言",
+        langZh: "中文",
+        langEn: "English",
+        hour24Label: "使用 24 小时制",
+        showSecondsLabel: "显示秒",
+        weekStartLabel: "一周起始",
+        weekStartMon: "周一",
+        weekStartSun: "周日",
+        subsTitle: "订阅日历",
+        subsDesc: "每行填写一个 .ics 订阅地址。注意：若订阅源不允许跨域访问，浏览器会提示同步失败。",
+        subsLabel: "订阅地址",
+        manualTitle: "手动日程",
+        manualDesc: "用于没有订阅源或临时添加的事项。",
+        endPlaceholder: "结束时间",
+        titlePlaceholder: "标题",
+        locationPlaceholder: "地点",
+        addEvent: "添加日程",
+        saveTitle: "保存",
+        saveDesc: "保存后返回大屏即可看到更新。",
+        saveAll: "保存设置",
+        clearEvents: "清空手动日程",
+        noManualEvents: "暂无手动日程",
+        untitled: "(无标题)",
+        delete: "删除",
+        fillDateTitle: "请填写日期和标题。",
+        added: "已添加。",
+        cleared: "已清空手动日程。",
+        autoDetectFailed: "无法自动检测时区，请手动填写。",
+        invalidTimezone: "时区无效，请输入 IANA 时区（例如 Asia/Shanghai）。",
+        configTooLarge: "配置过大，Cookie 可能无法保存。请减少订阅或手动日程。",
+        saved: "设置已保存，可返回大屏查看。"
+      },
+      en: {
+        pageTitle: "Screen Settings",
+        pageTitleFull: "Settings · Time Screen",
+        back: "Back to Screen",
+        displayTitle: "Display",
+        displayDesc: "These settings are stored in local storage/Cookie (no login or database required). If the config is large, the Cookie may not store everything.",
+        timezoneLabel: "Time zone",
+        timezonePlaceholder: "e.g. Asia/Shanghai",
+        autoTimezoneLabel: "Auto-detect time zone",
+        langLabel: "Language",
+        langZh: "Chinese",
+        langEn: "English",
+        hour24Label: "Use 24-hour format",
+        showSecondsLabel: "Show seconds",
+        weekStartLabel: "Week starts on",
+        weekStartMon: "Monday",
+        weekStartSun: "Sunday",
+        subsTitle: "Calendar Subscriptions",
+        subsDesc: "Enter one .ics URL per line. Note: if the source blocks CORS, the browser will show a sync failure.",
+        subsLabel: "Subscription URLs",
+        manualTitle: "Manual Events",
+        manualDesc: "For temporary items or when no subscription is available.",
+        endPlaceholder: "End time",
+        titlePlaceholder: "Title",
+        locationPlaceholder: "Location",
+        addEvent: "Add event",
+        saveTitle: "Save",
+        saveDesc: "Save and return to the screen to see updates.",
+        saveAll: "Save settings",
+        clearEvents: "Clear manual events",
+        noManualEvents: "No manual events",
+        untitled: "(Untitled)",
+        delete: "Delete",
+        fillDateTitle: "Please enter a date and title.",
+        added: "Added.",
+        cleared: "Manual events cleared.",
+        autoDetectFailed: "Unable to detect time zone. Please enter manually.",
+        invalidTimezone: "Invalid time zone. Please enter an IANA zone (e.g. Asia/Shanghai).",
+        configTooLarge: "Config too large; Cookie may not store all. Please reduce subscriptions or manual events.",
+        saved: "Settings saved. Return to the screen to view."
+      }
+    };
+
+    function t(key, ...args){
+      const value = I18N[LANG][key];
+      return typeof value === "function" ? value(...args) : value;
+    }
+
+    function withLang(url){
+      if (!LANG) return url;
+      const target = new URL(url, window.location.href);
+      target.searchParams.set("lang", LANG);
+      return target.toString();
+    }
+
     const DEFAULT_CONFIG = {
+      lang: LANG,
       timezone: "Asia/Shanghai",
       hour12: false,
       showSeconds: true,
@@ -261,8 +406,6 @@
       subscriptions: [],
       events: []
     };
-
-    const storageKey = "tw_config";
 
     function clone(obj){
       return JSON.parse(JSON.stringify(obj));
@@ -310,12 +453,16 @@
 
     function loadConfig(){
       const raw = readStored();
+      const hasStored = !!raw;
       if (!raw) return clone(DEFAULT_CONFIG);
       try {
         const parsed = JSON.parse(decodeURIComponent(raw));
         const config = { ...clone(DEFAULT_CONFIG), ...parsed };
         config.events = Array.isArray(parsed.events) ? parsed.events : [];
         config.subscriptions = Array.isArray(parsed.subscriptions) ? parsed.subscriptions : [];
+        if (!parsed.timezoneMode && hasStored){
+          config.timezoneMode = "manual";
+        }
         return config;
       } catch {
         return clone(DEFAULT_CONFIG);
@@ -324,14 +471,139 @@
 
     const config = loadConfig();
     const timezoneInput = document.getElementById("timezone");
+    const autoTimezone = document.getElementById("autoTimezone");
     const hour24 = document.getElementById("hour24");
     const showSeconds = document.getElementById("showSeconds");
     const weekStart = document.getElementById("weekStart");
     const subscriptions = document.getElementById("subscriptions");
     const eventList = document.getElementById("eventList");
     const status = document.getElementById("status");
+    const langSelect = document.getElementById("langSelect");
+    const pageTitle = document.getElementById("pageTitle");
+    const backLink = document.getElementById("backLink");
+    const displayTitle = document.getElementById("displayTitle");
+    const displayDesc = document.getElementById("displayDesc");
+    const timezoneLabel = document.getElementById("timezoneLabel");
+    const autoTimezoneLabel = document.getElementById("autoTimezoneLabel");
+    const langLabel = document.getElementById("langLabel");
+    const langZh = document.getElementById("langZh");
+    const langEn = document.getElementById("langEn");
+    const hour24Label = document.getElementById("hour24Label");
+    const showSecondsLabel = document.getElementById("showSecondsLabel");
+    const weekStartLabel = document.getElementById("weekStartLabel");
+    const weekStartMon = document.getElementById("weekStartMon");
+    const weekStartSun = document.getElementById("weekStartSun");
+    const subsTitle = document.getElementById("subsTitle");
+    const subsDesc = document.getElementById("subsDesc");
+    const subsLabel = document.getElementById("subsLabel");
+    const manualTitle = document.getElementById("manualTitle");
+    const manualDesc = document.getElementById("manualDesc");
+    const saveTitle = document.getElementById("saveTitle");
+    const saveDesc = document.getElementById("saveDesc");
+    const addEventBtn = document.getElementById("addEvent");
+    const saveAllBtn = document.getElementById("saveAll");
+    const clearEventsBtn = document.getElementById("clearEvents");
 
-    timezoneInput.value = config.timezone;
+    function applyI18n(){
+      document.title = t("pageTitleFull");
+      if (pageTitle) pageTitle.textContent = t("pageTitle");
+      if (backLink){
+        backLink.textContent = t("back");
+        backLink.href = withLang("index.html");
+      }
+      if (displayTitle) displayTitle.textContent = t("displayTitle");
+      if (displayDesc) displayDesc.textContent = t("displayDesc");
+      if (timezoneLabel) timezoneLabel.textContent = t("timezoneLabel");
+      if (timezoneInput) timezoneInput.placeholder = t("timezonePlaceholder");
+      if (autoTimezoneLabel) autoTimezoneLabel.textContent = t("autoTimezoneLabel");
+      if (langLabel) langLabel.textContent = t("langLabel");
+      if (langZh) langZh.textContent = t("langZh");
+      if (langEn) langEn.textContent = t("langEn");
+      if (hour24Label) hour24Label.textContent = t("hour24Label");
+      if (showSecondsLabel) showSecondsLabel.textContent = t("showSecondsLabel");
+      if (weekStartLabel) weekStartLabel.textContent = t("weekStartLabel");
+      if (weekStartMon) weekStartMon.textContent = t("weekStartMon");
+      if (weekStartSun) weekStartSun.textContent = t("weekStartSun");
+      if (subsTitle) subsTitle.textContent = t("subsTitle");
+      if (subsDesc) subsDesc.textContent = t("subsDesc");
+      if (subsLabel) subsLabel.textContent = t("subsLabel");
+      if (subscriptions) subscriptions.placeholder = "https://example.com/calendar.ics";
+      if (manualTitle) manualTitle.textContent = t("manualTitle");
+      if (manualDesc) manualDesc.textContent = t("manualDesc");
+      const eventEnd = document.getElementById("eventEnd");
+      const eventTitle = document.getElementById("eventTitle");
+      const eventLocation = document.getElementById("eventLocation");
+      if (eventEnd) eventEnd.placeholder = t("endPlaceholder");
+      if (eventTitle) eventTitle.placeholder = t("titlePlaceholder");
+      if (eventLocation) eventLocation.placeholder = t("locationPlaceholder");
+      if (addEventBtn) addEventBtn.textContent = t("addEvent");
+      if (saveTitle) saveTitle.textContent = t("saveTitle");
+      if (saveDesc) saveDesc.textContent = t("saveDesc");
+      if (saveAllBtn) saveAllBtn.textContent = t("saveAll");
+      if (clearEventsBtn) clearEventsBtn.textContent = t("clearEvents");
+    }
+
+    function getAutoTimeZone(){
+      try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      } catch (err){
+        return "";
+      }
+    }
+
+    function isValidTimeZone(value){
+      if (!value) return false;
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: value });
+        return true;
+      } catch (err){
+        return false;
+      }
+    }
+
+    function syncTimezoneUi(options = {}){
+      if (!timezoneInput || !autoTimezone) return;
+      const detected = getAutoTimeZone();
+      const useAuto = autoTimezone.checked;
+      if (useAuto){
+        timezoneInput.disabled = true;
+        timezoneInput.value = detected || config.timezone || "";
+        if (!detected && !options.silent){
+          status.textContent = t("autoDetectFailed");
+        } else if (!options.silent){
+          status.textContent = "";
+        }
+      } else {
+        timezoneInput.disabled = false;
+        if (!timezoneInput.value){
+          timezoneInput.value = config.timezone || detected || "";
+        }
+        if (!options.silent) status.textContent = "";
+      }
+    }
+
+    applyI18n();
+
+    if (autoTimezone){
+      autoTimezone.checked = config.timezoneMode !== "manual";
+      autoTimezone.addEventListener("change", () => {
+        syncTimezoneUi();
+      });
+    }
+
+    if (langSelect){
+      const presetLang = normalizeLang(config.lang) || LANG;
+      langSelect.value = presetLang;
+      langSelect.addEventListener("change", () => {
+        const nextLang = langSelect.value;
+        config.lang = nextLang;
+        const target = new URL(window.location.href);
+        target.searchParams.set("lang", nextLang);
+        window.location.href = target.toString();
+      });
+    }
+
+    syncTimezoneUi({ silent: true });
     hour24.checked = !config.hour12;
     showSeconds.checked = config.showSeconds;
     weekStart.value = String(config.weekStart);
@@ -340,18 +612,19 @@
     function renderEvents(){
       eventList.innerHTML = "";
       if (!config.events.length){
-        eventList.innerHTML = `<div class="event-item">暂无手动日程</div>`;
+        eventList.innerHTML = `<div class="event-item">${t("noManualEvents")}</div>`;
         return;
       }
       config.events.forEach((event, index) => {
+        const titleText = event.title || t("untitled");
         const item = document.createElement("div");
         item.className = "event-item";
         item.innerHTML = `
           <div>
-            <strong>${event.title || "(无标题)"}</strong>
+            <strong>${titleText}</strong>
             <span> · ${event.date || ""} ${event.time || ""}</span>
           </div>
-          <button class="btn btn-secondary" data-index="${index}">删除</button>
+          <button class="btn btn-secondary" data-index="${index}">${t("delete")}</button>
         `;
         item.querySelector("button").addEventListener("click", () => {
           config.events.splice(index, 1);
@@ -371,7 +644,7 @@
       const location = document.getElementById("eventLocation").value.trim();
 
       if (!date || !title){
-        status.textContent = "请填写日期和标题。";
+        status.textContent = t("fillDateTitle");
         return;
       }
 
@@ -381,7 +654,7 @@
         end,
         title,
         location,
-        source: "手动"
+        source: "manual"
       });
 
       document.getElementById("eventDate").value = "";
@@ -389,14 +662,14 @@
       document.getElementById("eventEnd").value = "";
       document.getElementById("eventTitle").value = "";
       document.getElementById("eventLocation").value = "";
-      status.textContent = "已添加。";
+      status.textContent = t("added");
       renderEvents();
     });
 
     document.getElementById("clearEvents").addEventListener("click", () => {
       config.events = [];
       renderEvents();
-      status.textContent = "已清空手动日程。";
+      status.textContent = t("cleared");
     });
 
     document.getElementById("saveAll").addEventListener("click", () => {
@@ -405,8 +678,28 @@
         .map(line => line.trim())
         .filter(Boolean);
 
+      const useAuto = autoTimezone && autoTimezone.checked;
+      let tzValue = timezoneInput.value.trim();
+      if (useAuto){
+        const detected = getAutoTimeZone();
+        if (!detected){
+          status.textContent = t("autoDetectFailed");
+          if (autoTimezone){
+            autoTimezone.checked = false;
+            syncTimezoneUi({ silent: true });
+          }
+          return;
+        }
+        tzValue = detected;
+      } else if (!isValidTimeZone(tzValue)){
+        status.textContent = t("invalidTimezone");
+        return;
+      }
+
       const nextConfig = {
-        timezone: timezoneInput.value.trim() || "Asia/Shanghai",
+        lang: langSelect ? langSelect.value : LANG,
+        timezoneMode: useAuto ? "auto" : "manual",
+        timezone: tzValue || "Asia/Shanghai",
         hour12: !hour24.checked,
         showSeconds: showSeconds.checked,
         weekStart: Number(weekStart.value),
@@ -416,12 +709,12 @@
 
       const encoded = encodeURIComponent(JSON.stringify(nextConfig));
       if (encoded.length > 3500){
-        status.textContent = "配置过大，Cookie 可能无法保存。请减少订阅或手动日程。";
+        status.textContent = t("configTooLarge");
         return;
       }
 
       writeStored(encoded);
-      status.textContent = "设置已保存，可返回大屏查看。";
+      status.textContent = t("saved");
     });
   </script>
 </body>

@@ -30,6 +30,9 @@
       --edge-pad: 0;
       --edge-pad-bottom: 0;
       --panel-bottom-gap: clamp(1.2vmin, calc(2.2 * var(--design-vw)), 2.8vmin);
+      --status-font: clamp(calc(1.1vmin * var(--panel-text-scale)), calc(1.3 * var(--design-vw) * var(--panel-text-scale)), calc(1.3vmin * var(--panel-text-scale)));
+      --btn-max-h: calc(var(--agenda-date-size) * 2.6);
+      --btn-max-w: calc(var(--agenda-date-size) * 8);
     }
 
     @media (prefers-color-scheme: light){
@@ -153,6 +156,23 @@
       white-space: normal;
     }
 
+    .timeis-link{
+      position:absolute;
+      right: var(--time-edge);
+      bottom: var(--time-edge);
+      font-size: var(--status-font);
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 0.1vmin solid transparent;
+      transition: border-color .2s ease, color .2s ease;
+      white-space: nowrap;
+    }
+
+    .timeis-link:hover{
+      color: var(--text);
+      border-color: rgba(255,255,255,.35);
+    }
+
     .meta-actions{
       display:flex;
       flex-direction:column;
@@ -195,9 +215,11 @@
     .time-card .settings-link,
     .time-card .ghost-btn{
       height: var(--time-btn-h);
-      font-size: var(--meta-font);
+      font-size: min(var(--meta-font), var(--agenda-date-size));
       min-width: clamp(6.4vmin, calc(var(--time-btn-h) * 2.1), 9.2vmin);
       padding: 0 clamp(0.8vmin, calc(var(--time-btn-h) * 0.3), 1.2vmin);
+      max-height: var(--btn-max-h);
+      max-width: var(--btn-max-w);
     }
 
     .today-chip{
@@ -238,11 +260,13 @@
       border:0.1vmin solid var(--line);
       background: rgba(255,255,255,.06);
       color: var(--text);
-      font-size: clamp(1.3vmin, 1.6vw, 1.6vmin);
+      font-size: min(clamp(1.3vmin, 1.6vw, 1.6vmin), var(--agenda-date-size));
       line-height:1;
       text-decoration:none;
       cursor:pointer;
       transition: transform .2s ease, background .2s ease;
+      max-height: var(--btn-max-h);
+      max-width: var(--btn-max-w);
     }
 
     .today-btn{
@@ -334,12 +358,14 @@
       border:0.1vmin solid var(--line);
       background: rgba(255,255,255,.08);
       color: var(--text);
-      font-size:1.8vmin;
+      font-size: min(1.8vmin, var(--agenda-date-size));
       line-height:1;
       cursor:pointer;
       display:flex;
       align-items:center;
       justify-content:center;
+      max-height: var(--btn-max-h);
+      max-width: var(--btn-max-h);
     }
 
     .month-nav button{
@@ -349,8 +375,10 @@
       border:0.1vmin solid var(--line);
       background: rgba(255,255,255,.08);
       color: var(--text);
-      font-size:1.8vmin;
+      font-size: min(1.8vmin, var(--agenda-date-size));
       cursor:pointer;
+      max-height: var(--btn-max-h);
+      max-width: var(--btn-max-h);
     }
 
     .month-label{
@@ -494,7 +522,7 @@
       right: clamp(1.4vmin, calc(2.2 * var(--design-vw)), 2.6vmin);
       bottom: clamp(1.2vmin, calc(1.8 * var(--design-vw)), 2.2vmin);
       color: var(--muted);
-      font-size: clamp(calc(1.1vmin * var(--panel-text-scale)), calc(1.3 * var(--design-vw) * var(--panel-text-scale)), calc(1.3vmin * var(--panel-text-scale)));
+      font-size: var(--status-font);
       pointer-events:none;
     }
 
@@ -513,13 +541,13 @@
       </div>
       <div class="time-sub">
         <div class="meta">
-          <span id="tzLabel">Asia/Shanghai</span>
         </div>
         <div class="meta-actions">
           <button class="ghost-btn" type="button" id="fullscreenBtn">全屏</button>
           <a class="settings-link" href="settings.html">设置</a>
         </div>
       </div>
+      <a class="timeis-link" id="timeIsLink" href="https://time.is/Shanghai" target="_blank" rel="noopener">上海时间（Time.is）</a>
     </section>
 
     <section class="card calendar-card" aria-label="日历">
@@ -551,20 +579,200 @@
   </main>
 
   <script>
+    const storageKey = "tw_config";
+    const urlParams = new URLSearchParams(window.location.search);
+
+    function normalizeLang(value){
+      const raw = (value || "").toLowerCase();
+      if (raw.startsWith("en")) return "en";
+      if (raw.startsWith("zh")) return "zh";
+      return null;
+    }
+
+    function getStoredLang(){
+      let raw = null;
+      try {
+        raw = localStorage.getItem(storageKey);
+      } catch (err) {}
+      if (!raw){
+        const escaped = storageKey.replace(/([.$?*|{}()[\]\\/+^])/g, "\\$1");
+        const match = document.cookie.match(new RegExp("(?:^|; )" + escaped + "=([^;]*)"));
+        raw = match ? match[1] : null;
+      }
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(decodeURIComponent(raw));
+        return normalizeLang(parsed.lang);
+      } catch (err){
+        return null;
+      }
+    }
+
+    const langParam = normalizeLang(urlParams.get("lang"));
+    const storedLang = getStoredLang();
+    const browserLang = normalizeLang(navigator.language);
+    const LANG = langParam || storedLang || browserLang || "zh";
+    const LOCALE = LANG === "en" ? "en-US" : "zh-CN";
+    document.documentElement.lang = LOCALE;
+
+    const I18N = {
+      zh: {
+        title: "时间大屏 · Time Web",
+        sectionTime: "时间",
+        sectionCalendar: "日历",
+        sectionAgenda: "日程",
+        refresh: "刷新",
+        fullscreenEnter: "全屏",
+        fullscreenExit: "退出全屏",
+        settings: "设置",
+        today: "今天",
+        prevMonth: "上个月",
+        nextMonth: "下个月",
+        collapseAgenda: "折叠日程",
+        expandAgenda: "展开日程",
+        syncNone: "日历订阅：未配置",
+        syncLoading: "日历订阅：同步中...",
+        syncPartial: (count) => `日历订阅：${count} 条（部分失败）`,
+        syncOk: (count) => `日历订阅：${count} 条已同步`,
+        subscriptionFailed: "订阅失败",
+        subscriptionFailedWithUrl: (url) => `订阅失败：${url}`,
+        agendaEmpty: "暂无日程",
+        allDay: "全天",
+        tbd: "待定",
+        untitled: "(无标题)",
+        sourceSubscription: "订阅",
+        sourceManual: "手动",
+        weekdays: ["日", "一", "二", "三", "四", "五", "六"],
+        timeIsLabel: (place, tzShort) => `${place || tzShort}时间（Time.is）`
+      },
+      en: {
+        title: "Time Screen · Time Web",
+        sectionTime: "Time",
+        sectionCalendar: "Calendar",
+        sectionAgenda: "Agenda",
+        refresh: "Refresh",
+        fullscreenEnter: "Fullscreen",
+        fullscreenExit: "Exit Fullscreen",
+        settings: "Settings",
+        today: "Today",
+        prevMonth: "Previous month",
+        nextMonth: "Next month",
+        collapseAgenda: "Collapse agenda",
+        expandAgenda: "Expand agenda",
+        syncNone: "Calendar subscription: not configured",
+        syncLoading: "Calendar subscription: syncing...",
+        syncPartial: (count) => `Calendar subscription: ${count} items (partial failure)`,
+        syncOk: (count) => `Calendar subscription: ${count} items synced`,
+        subscriptionFailed: "Subscription failed",
+        subscriptionFailedWithUrl: (url) => `Subscription failed: ${url}`,
+        agendaEmpty: "No events",
+        allDay: "All day",
+        tbd: "TBD",
+        untitled: "(Untitled)",
+        sourceSubscription: "Subscription",
+        sourceManual: "Manual",
+        weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        timeIsLabel: (place, tzShort) => `${place || tzShort} Time · Time.is`
+      }
+    };
+
+    function t(key, ...args){
+      const value = I18N[LANG][key];
+      return typeof value === "function" ? value(...args) : value;
+    }
+
+    const TIME_IS_MAP = {
+      "Asia/Shanghai": { slug: "Shanghai", zh: "上海", en: "Shanghai" },
+      "Asia/Hong_Kong": { slug: "Hong_Kong", zh: "香港", en: "Hong Kong" },
+      "Asia/Taipei": { slug: "Taipei", zh: "台北", en: "Taipei" },
+      "Asia/Tokyo": { slug: "Tokyo", zh: "东京", en: "Tokyo" },
+      "Asia/Seoul": { slug: "Seoul", zh: "首尔", en: "Seoul" },
+      "Asia/Singapore": { slug: "Singapore", zh: "新加坡", en: "Singapore" },
+      "Asia/Bangkok": { slug: "Bangkok", zh: "曼谷", en: "Bangkok" },
+      "Asia/Dubai": { slug: "Dubai", zh: "迪拜", en: "Dubai" },
+      "Europe/London": { slug: "London", zh: "伦敦", en: "London" },
+      "Europe/Paris": { slug: "Paris", zh: "巴黎", en: "Paris" },
+      "Europe/Berlin": { slug: "Berlin", zh: "柏林", en: "Berlin" },
+      "America/New_York": { slug: "New_York", zh: "纽约", en: "New York" },
+      "America/Chicago": { slug: "Chicago", zh: "芝加哥", en: "Chicago" },
+      "America/Denver": { slug: "Denver", zh: "丹佛", en: "Denver" },
+      "America/Los_Angeles": { slug: "Los_Angeles", zh: "洛杉矶", en: "Los Angeles" },
+      "America/Vancouver": { slug: "Vancouver", zh: "温哥华", en: "Vancouver" },
+      "America/Toronto": { slug: "Toronto", zh: "多伦多", en: "Toronto" },
+      "America/Sao_Paulo": { slug: "Sao_Paulo", zh: "圣保罗", en: "Sao Paulo" },
+      "Australia/Sydney": { slug: "Sydney", zh: "悉尼", en: "Sydney" },
+      "Pacific/Auckland": { slug: "Auckland", zh: "奥克兰", en: "Auckland" }
+    };
+
+    function getTimeIsOverride(){
+      const raw = urlParams.get("timeis") || urlParams.get("region") || urlParams.get("city");
+      if (!raw) return null;
+      const slug = raw.trim().replace(/[\s/]+/g, "_");
+      if (!slug) return null;
+      const label = urlParams.get("timeis_label") || urlParams.get("label");
+      return { slug, label };
+    }
+
+    function getTimeZoneShort(timeZone){
+      try {
+        const parts = new Intl.DateTimeFormat(LOCALE, {
+          timeZone,
+          timeZoneName: "short"
+        }).formatToParts(new Date());
+        const zone = parts.find(part => part.type === "timeZoneName");
+        return zone ? zone.value : timeZone;
+      } catch (err){
+        return timeZone;
+      }
+    }
+
+    function buildTimeIsInfo(timeZone){
+      const override = getTimeIsOverride();
+      if (override){
+        const place = override.label ? override.label.trim() : override.slug.replace(/_/g, " ");
+        return {
+          href: `https://time.is/${encodeURIComponent(override.slug)}`,
+          label: t("timeIsLabel", place, getTimeZoneShort(timeZone))
+        };
+      }
+      const mapped = TIME_IS_MAP[timeZone] || null;
+      const slug = mapped?.slug || (timeZone ? timeZone.split("/").pop() : "UTC") || "UTC";
+      const place = LANG === "en" ? mapped?.en : mapped?.zh;
+      return {
+        href: `https://time.is/${encodeURIComponent(slug)}`,
+        label: t("timeIsLabel", place, getTimeZoneShort(timeZone))
+      };
+    }
+
+    function withLang(url){
+      if (!LANG) return url;
+      const target = new URL(url, window.location.href);
+      target.searchParams.set("lang", LANG);
+      return target.toString();
+    }
+
+    const DEFAULT_EVENTS = LANG === "en"
+      ? [
+        { date: "2026-01-29", time: "09:30", end: "10:30", title: "Product review", location: "Meeting Room A", source: "manual" },
+        { date: "2026-01-29", time: "13:00", end: "14:00", title: "Project sync", location: "Online meeting", source: "manual" },
+        { date: "2026-01-29", time: "17:30", end: "18:00", title: "Daily summary", location: "Final check", source: "manual" }
+      ]
+      : [
+        { date: "2026-01-29", time: "09:30", end: "10:30", title: "产品评审", location: "会议室 A", source: "manual" },
+        { date: "2026-01-29", time: "13:00", end: "14:00", title: "项目同步", location: "线上会议", source: "manual" },
+        { date: "2026-01-29", time: "17:30", end: "18:00", title: "日报整理", location: "发送前确认", source: "manual" }
+      ];
+
     const DEFAULT_CONFIG = {
+      lang: LANG,
+      timezoneMode: "auto",
       timezone: "Asia/Shanghai",
       hour12: false,
       showSeconds: true,
       weekStart: 1,
       subscriptions: [],
-      events: [
-        { date: "2026-01-29", time: "09:30", end: "10:30", title: "产品评审", location: "会议室 A", source: "手动" },
-        { date: "2026-01-29", time: "13:00", end: "14:00", title: "项目同步", location: "线上会议", source: "手动" },
-        { date: "2026-01-29", time: "17:30", end: "18:00", title: "日报整理", location: "发送前确认", source: "手动" }
-      ]
+      events: DEFAULT_EVENTS
     };
-
-    const storageKey = "tw_config";
 
     function clone(obj){
       return JSON.parse(JSON.stringify(obj));
@@ -614,6 +822,24 @@
       }
     }
 
+    function getAutoTimeZone(){
+      try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      } catch (err){
+        return "";
+      }
+    }
+
+    function isValidTimeZone(value){
+      if (!value) return false;
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: value });
+        return true;
+      } catch (err){
+        return false;
+      }
+    }
+
     function readStored(){
       let raw = null;
       if (canUseLocalStorage()){
@@ -627,16 +853,42 @@
 
     function loadConfig(){
       const raw = readStored();
-      if (!raw) return clone(DEFAULT_CONFIG);
+      const hasStored = !!raw;
+      if (!raw){
+        const config = clone(DEFAULT_CONFIG);
+        const autoTz = getAutoTimeZone();
+        if (config.timezoneMode === "auto" && autoTz){
+          config.timezone = autoTz;
+        }
+        return config;
+      }
       try {
         const parsed = JSON.parse(decodeURIComponent(raw));
         const config = { ...clone(DEFAULT_CONFIG), ...parsed };
         config.events = Array.isArray(parsed.events) ? parsed.events : clone(DEFAULT_CONFIG.events);
         config.subscriptions = Array.isArray(parsed.subscriptions) ? parsed.subscriptions : [];
+        if (!parsed.timezoneMode && hasStored){
+          config.timezoneMode = "manual";
+        }
+        if (config.timezoneMode === "auto"){
+          const autoTz = getAutoTimeZone();
+          if (autoTz) config.timezone = autoTz;
+        }
+        if (!isValidTimeZone(config.timezone)){
+          config.timezone = getAutoTimeZone() || DEFAULT_CONFIG.timezone;
+        }
         return config;
       } catch (err){
         return clone(DEFAULT_CONFIG);
       }
+    }
+
+    function localizeSource(source){
+      if (!source) return "";
+      const normalized = String(source).trim().toLowerCase();
+      if (normalized === "manual" || normalized === "手动") return t("sourceManual");
+      if (normalized === "subscription" || normalized === "订阅") return t("sourceSubscription");
+      return source;
     }
 
     function formatDateKey(year, monthIndex, day){
@@ -663,7 +915,7 @@
     }
 
     function buildWeekdaysRow(weekStart){
-      const labels = ["日", "一", "二", "三", "四", "五", "六"];
+      const labels = t("weekdays");
       const row = [];
       for (let i=0; i<7; i++){
         row.push(labels[(weekStart + i) % 7]);
@@ -674,12 +926,22 @@
     function formatDateDisplay(dateStr, timeZone){
       const [year, month, day] = dateStr.split("-").map(Number);
       const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-      const fmt = new Intl.DateTimeFormat("zh-CN", {
+      const fmt = new Intl.DateTimeFormat(LOCALE, {
         timeZone,
         year: "numeric",
         month: "long",
         day: "numeric",
         weekday: "short"
+      });
+      return fmt.format(date);
+    }
+
+    function formatMonthLabel(year, monthIndex, timeZone){
+      const date = new Date(Date.UTC(year, monthIndex, 1, 12, 0, 0));
+      const fmt = new Intl.DateTimeFormat(LOCALE, {
+        timeZone,
+        year: "numeric",
+        month: "long"
       });
       return fmt.format(date);
     }
@@ -780,9 +1042,9 @@
           time: data.time,
           end: item.dtend ? item.dtend.time : "",
           allDay: data.allDay,
-          title: item.summary || "(无标题)",
+          title: item.summary || t("untitled"),
           location: item.location || "",
-          source: "订阅"
+          source: "subscription"
         };
       });
     }
@@ -799,7 +1061,6 @@
     const calendarCard = document.querySelector(".calendar-card");
     const timeEl = document.getElementById("timeText");
     const dateEl = document.getElementById("dateText");
-    const tzLabel = document.getElementById("tzLabel");
     const monthLabel = document.getElementById("monthLabel");
     const calendarGrid = document.getElementById("calendarGrid");
     const agendaList = document.getElementById("agendaList");
@@ -811,9 +1072,46 @@
     const fullscreenBtn = document.getElementById("fullscreenBtn");
     const refreshBtn = document.getElementById("refreshBtn");
     const todayBtn = document.getElementById("todayBtn");
+    const settingsLink = document.querySelector(".settings-link");
+    const timeIsLink = document.getElementById("timeIsLink");
+    const calendarTitle = calendarCard ? calendarCard.querySelector("h2") : null;
+    const agendaTitle = agendaCard ? agendaCard.querySelector("h2") : null;
+    const prevMonthBtn = document.getElementById("prevMonth");
+    const nextMonthBtn = document.getElementById("nextMonth");
 
-    tzLabel.textContent = config.timezone;
+    function applyI18n(){
+      document.title = t("title");
+      if (timeCard) timeCard.setAttribute("aria-label", t("sectionTime"));
+      if (calendarCard) calendarCard.setAttribute("aria-label", t("sectionCalendar"));
+      if (agendaCard) agendaCard.setAttribute("aria-label", t("sectionAgenda"));
+      if (refreshBtn){
+        refreshBtn.textContent = t("refresh");
+        refreshBtn.setAttribute("aria-label", t("refresh"));
+      }
+      if (fullscreenBtn) fullscreenBtn.textContent = t("fullscreenEnter");
+      if (settingsLink){
+        settingsLink.textContent = t("settings");
+        settingsLink.href = withLang("settings.html");
+      }
+      if (calendarTitle) calendarTitle.textContent = t("sectionCalendar");
+      if (agendaTitle) agendaTitle.textContent = t("sectionAgenda");
+      if (todayBtn) todayBtn.textContent = t("today");
+      if (prevMonthBtn) prevMonthBtn.setAttribute("aria-label", t("prevMonth"));
+      if (nextMonthBtn) nextMonthBtn.setAttribute("aria-label", t("nextMonth"));
+      if (syncStatus) syncStatus.textContent = t("syncNone");
+    }
+
+    function updateTimeIsLink(){
+      if (!timeIsLink) return;
+      const info = buildTimeIsInfo(config.timezone);
+      timeIsLink.href = info.href;
+      timeIsLink.textContent = info.label;
+      timeIsLink.setAttribute("aria-label", info.label);
+    }
+
+    applyI18n();
     weekdayRow.innerHTML = buildWeekdaysRow(config.weekStart).map(label => `<div>${label}</div>`).join("");
+    updateTimeIsLink();
 
     let selectedDate = getTodayString(config.timezone);
     let [viewYear, viewMonth] = selectedDate.split("-").map((value, idx) => idx === 1 ? Number(value) - 1 : Number(value));
@@ -947,7 +1245,7 @@
       }
       toggleAgenda.setAttribute("aria-expanded", String(!agendaCollapsed));
       toggleAgenda.textContent = agendaCollapsed ? "+" : "-";
-      toggleAgenda.setAttribute("aria-label", agendaCollapsed ? "展开日程" : "折叠日程");
+      toggleAgenda.setAttribute("aria-label", agendaCollapsed ? t("expandAgenda") : t("collapseAgenda"));
       if (!skipResync){
         updateAgendaWidth();
         updateCalendarGridSize();
@@ -972,7 +1270,7 @@
       const leading = (firstDow - config.weekStart + 7) % 7;
       const todayStr = getTodayString(config.timezone);
 
-      monthLabel.textContent = `${viewYear}年 ${viewMonth + 1}月`;
+      monthLabel.textContent = formatMonthLabel(viewYear, viewMonth, config.timezone);
       calendarGrid.innerHTML = "";
 
       for (let i = 0; i < 42; i++){
@@ -1032,25 +1330,27 @@
       });
 
       if (!events.length){
-        agendaList.innerHTML = `<div class="empty">暂无日程</div>`;
+        agendaList.innerHTML = `<div class="empty">${t("agendaEmpty")}</div>`;
         return;
       }
 
       agendaList.innerHTML = events.map(event => {
-        const timeText = event.allDay ? "全天" : (event.time || "待定");
+        const timeText = event.allDay ? t("allDay") : (event.time || t("tbd"));
         const range = event.end ? ` - ${event.end}` : "";
         const metaParts = [];
         if (event.location) metaParts.push(event.location);
-        if (event.source) metaParts.push(event.source);
+        const sourceText = localizeSource(event.source);
+        if (sourceText) metaParts.push(sourceText);
         const metaDisplay = metaParts.join(" · ");
         const metaText = metaDisplay ? ` · ${metaDisplay}` : "";
-        const titleAttr = escapeAttr(event.title || "");
+        const titleText = event.title || t("untitled");
+        const titleAttr = escapeAttr(titleText);
         const metaAttr = escapeAttr(metaDisplay);
         return `
           <div class="event">
             <div class="event-time">${timeText}${range}</div>
             <div>
-              <div class="event-title" title="${titleAttr}">${event.title}</div>
+              <div class="event-title" title="${titleAttr}">${titleText}</div>
               <div class="event-meta" title="${metaAttr}">${metaText}</div>
             </div>
           </div>
@@ -1074,7 +1374,7 @@
 
     function updateFullscreenLabel(){
       const isFullscreen = !!document.fullscreenElement;
-      fullscreenBtn.textContent = isFullscreen ? "退出全屏" : "全屏";
+      fullscreenBtn.textContent = isFullscreen ? t("fullscreenExit") : t("fullscreenEnter");
     }
 
     function updateClock(){
@@ -1086,29 +1386,28 @@
         hour12: config.hour12
       };
       if (config.showSeconds) timeOptions.second = "2-digit";
-      const timeFormatter = new Intl.DateTimeFormat("zh-CN", timeOptions);
-      const parts = new Intl.DateTimeFormat("zh-CN", {
+      const timeFormatter = new Intl.DateTimeFormat(LOCALE, timeOptions);
+      const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
         timeZone: config.timezone,
         year: "numeric",
-        month: "2-digit",
+        month: "long",
         day: "2-digit",
         weekday: "short"
-      }).formatToParts(now);
-      const get = (type) => parts.find(p => p.type === type)?.value || "";
-      dateEl.textContent = `${get("year")}年${get("month")}月${get("day")}日 ${get("weekday")}`;
+      });
+      dateEl.textContent = dateFormatter.format(now);
       timeEl.textContent = timeFormatter.format(now);
     }
 
     async function loadSubscriptionEvents(){
       if (!config.subscriptions.length){
-        syncStatus.textContent = "日历订阅：未配置";
+        syncStatus.textContent = t("syncNone");
         return [];
       }
 
-      syncStatus.textContent = "日历订阅：同步中...";
+      syncStatus.textContent = t("syncLoading");
       const tasks = config.subscriptions.map(async (url) => {
         const response = await fetch(url, { cache: "no-cache" });
-        if (!response.ok) throw new Error(`订阅失败：${url}`);
+        if (!response.ok) throw new Error(t("subscriptionFailedWithUrl", url));
         const text = await response.text();
         return parseIcs(text, config.timezone);
       });
@@ -1120,14 +1419,14 @@
         if (result.status === "fulfilled"){
           events.push(...result.value);
         } else {
-          errors.push(result.reason?.message || "订阅失败");
+          errors.push(result.reason?.message || t("subscriptionFailed"));
         }
       }
 
       if (errors.length){
-        syncStatus.textContent = `日历订阅：${events.length} 条（部分失败）`;
+        syncStatus.textContent = t("syncPartial", events.length);
       } else {
-        syncStatus.textContent = `日历订阅：${events.length} 条已同步`;
+        syncStatus.textContent = t("syncOk", events.length);
       }
 
       return events;
